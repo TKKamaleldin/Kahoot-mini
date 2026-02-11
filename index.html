@@ -14,10 +14,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 #timer{width:70px;height:70px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;font-size:28px}
 .answers{width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr}
 .ans{width:100%;height:100%;font-size:22px;color:#fff;border:none}
-.red{background:#e21b3c}
-.blue{background:#1368ce}
-.yellow{background:#d89e00;color:#000}
-.green{background:#26890c}
+.red{background:#e21b3c}.blue{background:#1368ce}.yellow{background:#d89e00;color:#000}.green{background:#26890c}
 .card{background:#1b1b1b;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .small{opacity:.85;font-size:14px}
 </style>
@@ -66,8 +63,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 </div>
 
 <script>
-
-// 🔥 Apps Script URL
 const APPS_SCRIPT_URL =
 "https://script.google.com/macros/s/AKfycbxWFXNuJAFKazUIozwLPILIkovhM1cSJAVg7rqixboSqUJpS8tF5sXmNziXK1ntpZ91Aw/exec";
 
@@ -87,14 +82,16 @@ function startGame(){
   name=document.getElementById("nameInput").value.trim();
   email=document.getElementById("emailInput").value.trim().toLowerCase();
 
+  const msg=document.getElementById("loginMsg");
+  msg.textContent="";
+
   if(!name || !email){
-    document.getElementById("loginMsg").textContent="اكتبي الاسم والإيميل";
+    msg.textContent="اكتبي الاسم والإيميل";
     return;
   }
 
   document.getElementById("loginScreen").classList.add("hidden");
   document.getElementById("questionScreen").classList.remove("hidden");
-
   loadQuestion();
 }
 
@@ -139,7 +136,6 @@ function answer(choice){
 
   let score=0;
   const correct=(choice===question.correctIndex);
-
   if(correct){
     score=Math.max(0,Math.floor((question.timeLimit-timeTaken)*10));
   }
@@ -148,37 +144,34 @@ function answer(choice){
 }
 
 async function finish(correct,score,timeTaken){
-
   document.getElementById("questionScreen").classList.add("hidden");
   document.getElementById("resultScreen").classList.remove("hidden");
 
-  document.getElementById("resultTitle").textContent=
-  correct?"✅ Correct!":"❌ Wrong!";
-
-  document.getElementById("resultDetails").textContent=
-  `Score: ${score} | Time: ${timeTaken.toFixed(1)}s`;
+  document.getElementById("resultTitle").textContent = correct ? "✅ Correct!" : "❌ Wrong!";
+  document.getElementById("resultDetails").textContent =
+    `Score: ${score} | Time: ${timeTaken.toFixed(1)}s`;
 
   const status=document.getElementById("sendStatus");
+  status.textContent="جارٍ إرسال النتيجة...";
 
   try{
-    await fetch(APPS_SCRIPT_URL,{
+    const fd = new FormData();
+    fd.append("email", email);
+    fd.append("name", name);
+    fd.append("score", String(score));
+    fd.append("time", timeTaken.toFixed(1));
+
+    await fetch(APPS_SCRIPT_URL, {
       method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        email:email,
-        name:name,
-        score:score,
-        time:timeTaken.toFixed(1)
-      })
+      body: fd
     });
 
     status.textContent="✅ تم إرسال النتيجة (شيكي الشيت)";
-  }
-  catch(e){
-    status.textContent="❌ الإرسال فشل — تأكدي من Deploy";
+  }catch(e){
+    console.log(e);
+    status.textContent="❌ الإرسال فشل — افتحي Console وشوفي error";
   }
 }
-
 </script>
 
 </body>
