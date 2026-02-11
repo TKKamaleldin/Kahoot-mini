@@ -6,105 +6,17 @@
 <title>Fawazeer</title>
 
 <style>
-body{
-  margin:0;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  background: linear-gradient(135deg,#0f0f0f,#1c1c1c);
-  color:#fff;
-}
-
-.screen{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
+body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
 .hidden{display:none!important}
-
-.card{
-  background:#1b1b1b;
-  padding:40px;
-  border-radius:18px;
-  box-shadow:0 20px 50px rgba(0,0,0,.6);
-  min-width:420px;
-}
-
-h1{
-  margin:0 0 20px;
-  font-weight:600;
-  letter-spacing:1px;
-}
-
-input{
-  width:100%;
-  padding:14px;
-  margin-bottom:12px;
-  border-radius:10px;
-  border:none;
-  font-size:16px;
-  background:#2a2a2a;
-  color:#fff;
-}
-
-input::placeholder{color:#aaa}
-
-button{
-  width:100%;
-  padding:14px;
-  border:none;
-  border-radius:10px;
-  font-size:16px;
-  cursor:pointer;
-  background:#ffffff;
-  color:#000;
-  font-weight:600;
-  transition:.2s;
-}
-
-button:hover{
-  transform:translateY(-2px);
-}
-
-#timer{
-  width:80px;
-  height:80px;
-  border-radius:50%;
-  background:#000;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:28px;
-  margin-bottom:20px;
-}
-
-.answers{
-  width:100%;
-  height:60vh;
-  display:grid;
-  grid-template-columns:1fr 1fr;
-}
-
-.ans{
-  font-size:22px;
-  color:#fff;
-  border:none;
-  cursor:pointer;
-}
-
-.red{background:#e21b3c}
-.blue{background:#1368ce}
-.yellow{background:#d89e00;color:#000}
-.green{background:#26890c}
-
-.resultCard{
-  background:#1b1b1b;
-  padding:30px;
-  border-radius:18px;
-  text-align:center;
-  box-shadow:0 20px 50px rgba(0,0,0,.6);
-}
+input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
+button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
+#timer{width:70px;height:70px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;font-size:28px}
+.answers{width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr}
+.ans{width:100%;height:100%;font-size:22px;color:#fff;border:none}
+.red{background:#e21b3c}.blue{background:#1368ce}.yellow{background:#d89e00;color:#000}.green{background:#26890c}
+.card{background:#1b1b1b;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.small{opacity:.85;font-size:14px}
 </style>
 </head>
 
@@ -114,16 +26,23 @@ button:hover{
 <div id="loginScreen" class="screen">
   <div class="card">
     <h1>Fawazeer</h1>
-    <input id="nameInput" placeholder="Full Name"/>
-    <input id="emailInput" placeholder="Email Address"/>
+
+    <input id="nameInput" placeholder="Name"/>
+    <input id="emailInput" placeholder="Email"/>
     <button onclick="startGame()">Start</button>
+
+    <div class="small" id="loginMsg"></div>
   </div>
 </div>
 
 <!-- QUESTION -->
-<div id="questionScreen" class="screen hidden" style="flex-direction:column">
-  <div id="timer">20</div>
-  <h2 id="qText"></h2>
+<div id="questionScreen" class="screen hidden">
+  <div style="display:flex;gap:14px;align-items:center">
+    <div id="timer">20</div>
+    <div id="scoreBox" class="small">Score: 0</div>
+  </div>
+
+  <h2 id="qText">Loading...</h2>
 
   <div class="answers">
     <button class="ans red" onclick="answer(0)"></button>
@@ -135,9 +54,9 @@ button:hover{
 
 <!-- RESULT -->
 <div id="resultScreen" class="screen hidden">
-  <div class="resultCard">
-    <h2 id="resultTitle"></h2>
-    <p id="resultDetails"></p>
+  <div class="card" style="text-align:center">
+    <h1 id="resultTitle"></h1>
+    <div id="resultDetails"></div>
   </div>
 </div>
 
@@ -162,12 +81,16 @@ function startGame(){
   name=document.getElementById("nameInput").value.trim();
   email=document.getElementById("emailInput").value.trim().toLowerCase();
 
+  const msg=document.getElementById("loginMsg");
+  msg.textContent="";
+
   if(!name || !email){
-    alert("Please enter your name and email.");
+    msg.textContent="Please enter your name and email.";
     return;
   }
 
-  show("questionScreen");
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("questionScreen").classList.remove("hidden");
   loadQuestion();
 }
 
@@ -193,7 +116,6 @@ function startTimer(sec){
   timer=setInterval(()=>{
     t--;
     document.getElementById("timer").textContent=t;
-
     if(t<=0){
       clearInterval(timer);
       if(!answered){
@@ -206,7 +128,6 @@ function startTimer(sec){
 function answer(choice){
   if(answered) return;
   answered=true;
-
   clearInterval(timer);
 
   const elapsed=(Date.now()-startTime)/1000;
@@ -214,7 +135,6 @@ function answer(choice){
 
   let score=0;
   const correct=(choice===question.correctIndex);
-
   if(correct){
     score=Math.max(0,Math.floor((question.timeLimit-timeTaken)*10));
   }
@@ -223,14 +143,14 @@ function answer(choice){
 }
 
 async function finish(correct,score,timeTaken){
-
-  show("resultScreen");
+  document.getElementById("questionScreen").classList.add("hidden");
+  document.getElementById("resultScreen").classList.remove("hidden");
 
   document.getElementById("resultTitle").textContent =
     correct ? "Correct!" : "Incorrect";
 
   document.getElementById("resultDetails").textContent =
-    `Score: ${score} | Time: ${timeTaken.toFixed(1)} seconds`;
+    `Score: ${score} | Time: ${timeTaken.toFixed(1)}s`;
 
   try{
     const fd=new FormData();
@@ -247,12 +167,6 @@ async function finish(correct,score,timeTaken){
   }catch(e){
     console.log(e);
   }
-}
-
-function show(id){
-  ["loginScreen","questionScreen","resultScreen"].forEach(x=>{
-    document.getElementById(x).classList.toggle("hidden",x!==id);
-  });
 }
 
 </script>
