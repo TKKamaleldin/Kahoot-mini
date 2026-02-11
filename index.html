@@ -1,23 +1,26 @@
 <!doctype html>
 <html lang="ar">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Kahoot Mini</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kahoot Mini</title>
 
-  <style>
-    body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
-    .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
-    .hidden{display:none!important}
-    input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
-    button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
-    #timer{width:64px;height:64px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;font-size:26px}
-    .answers{width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr}
-    .ans{width:100%;height:100%;font-size:22px;color:#fff;border:none}
-    .red{background:#e21b3c}.blue{background:#1368ce}.yellow{background:#d89e00;color:#000}.green{background:#26890c}
-    .card{background:#1b1b1b;padding:18px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    .small{opacity:.85;font-size:14px}
-  </style>
+<style>
+body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.hidden{display:none!important}
+input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
+button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
+#timer{width:70px;height:70px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;font-size:28px}
+.answers{width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr}
+.ans{width:100%;height:100%;font-size:22px;color:#fff;border:none}
+.red{background:#e21b3c}
+.blue{background:#1368ce}
+.yellow{background:#d89e00;color:#000}
+.green{background:#26890c}
+.card{background:#1b1b1b;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.small{opacity:.85;font-size:14px}
+</style>
 </head>
 
 <body>
@@ -25,13 +28,11 @@
 <!-- LOGIN -->
 <div id="loginScreen" class="screen">
   <div class="card">
-    <h1 style="margin:0 0 8px">Kahoot Mini</h1>
+    <h1>Kahoot Mini</h1>
     <div class="small">اكتبي بياناتك وابدأي</div>
-    <div style="height:10px"></div>
-
-    <input id="nameInput" placeholder="Name" />
-    <input id="emailInput" placeholder="Email (Google account)" />
-
+    <br/>
+    <input id="nameInput" placeholder="Name"/>
+    <input id="emailInput" placeholder="Email"/>
     <button onclick="startGame()">Start</button>
     <div class="small" id="loginMsg"></div>
   </div>
@@ -44,7 +45,7 @@
     <div id="scoreBox" class="small">Score: 0</div>
   </div>
 
-  <h2 id="qText" style="text-align:center;margin:10px 18px">Loading...</h2>
+  <h2 id="qText">Loading...</h2>
 
   <div class="answers">
     <button class="ans red" onclick="answer(0)"></button>
@@ -56,141 +57,128 @@
 
 <!-- RESULT -->
 <div id="resultScreen" class="screen hidden">
-  <div class="card" style="text-align:center;min-width:320px">
-    <h1 id="resultTitle" style="margin:0 0 8px"></h1>
-    <div id="resultDetails" class="small"></div>
-    <div style="height:12px"></div>
-    <div class="small" id="sendStatus">جارٍ إرسال النتيجة…</div>
+  <div class="card" style="text-align:center">
+    <h1 id="resultTitle"></h1>
+    <div id="resultDetails"></div>
+    <br/>
+    <div id="sendStatus" class="small">جارٍ إرسال النتيجة...</div>
   </div>
 </div>
 
 <script>
-  // ====== حطي هنا Web App URL بتاع Apps Script ======
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWFXNuJAFKazUIozwLPILIkovhM1cSJAVg7rqixboSqUJpS8tF5sXmNziXK1ntpZ91Aw/exec";
 
-  const question = {
-    text: "What is the capital of Egypt?",
-    options: ["Alexandria","Cairo","Giza","Luxor"],
-    correctIndex: 1,
-    timeLimit: 20
-  };
+// 🔥 Apps Script URL
+const APPS_SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbxWFXNuJAFKazUIozwLPILIkovhM1cSJAVg7rqixboSqUJpS8tF5sXmNziXK1ntpZ91Aw/exec";
 
-  let email="", name="";
-  let startTs=0;
-  let timer=null;
-  let answered=false;
+const question = {
+  text: "What is the capital of Egypt?",
+  options: ["Alexandria","Cairo","Giza","Luxor"],
+  correctIndex: 1,
+  timeLimit: 20
+};
 
-  function startGame(){
-    name = document.getElementById("nameInput").value.trim();
-    email = document.getElementById("emailInput").value.trim().toLowerCase();
+let email="", name="";
+let startTime=0;
+let timer=null;
+let answered=false;
 
-    const msg = document.getElementById("loginMsg");
-    msg.textContent = "";
+function startGame(){
+  name=document.getElementById("nameInput").value.trim();
+  email=document.getElementById("emailInput").value.trim().toLowerCase();
 
-    if(!name || !email){
-      msg.textContent = "اكتبي الاسم والإيميل";
-      return;
-    }
-
-    // منع تكرار على نفس الجهاز (اختياري)
-    const key = "kahoot_done_" + email;
-    if(localStorage.getItem(key) === "1"){
-      msg.textContent = "إنتِ حلّيتي قبل كده على نفس الجهاز.";
-      return;
-    }
-
-    show("questionScreen");
-    loadQuestion();
+  if(!name || !email){
+    document.getElementById("loginMsg").textContent="اكتبي الاسم والإيميل";
+    return;
   }
 
-  function loadQuestion(){
-    answered=false;
-    document.getElementById("scoreBox").textContent = "Score: 0";
-    document.getElementById("qText").textContent = question.text;
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("questionScreen").classList.remove("hidden");
 
-    const btns = document.querySelectorAll(".ans");
-    btns.forEach((b,i)=>{ b.textContent = question.options[i]; b.disabled=false; });
+  loadQuestion();
+}
 
-    startTs = Date.now();
-    startTimer(question.timeLimit);
-  }
+function loadQuestion(){
+  answered=false;
+  document.getElementById("qText").textContent=question.text;
 
-  function startTimer(seconds){
-    clearInterval(timer);
-    let t = seconds;
-    document.getElementById("timer").textContent = t;
+  const btns=document.querySelectorAll(".ans");
+  btns.forEach((b,i)=>{
+    b.textContent=question.options[i];
+    b.disabled=false;
+  });
 
-    timer = setInterval(()=>{
-      t--;
-      document.getElementById("timer").textContent = t;
-      if(t<=0){
-        clearInterval(timer);
-        lock();
-        if(!answered){
-          finish(false, 0, seconds);
-        }
+  startTime=Date.now();
+  startTimer(question.timeLimit);
+}
+
+function startTimer(sec){
+  clearInterval(timer);
+  let t=sec;
+  document.getElementById("timer").textContent=t;
+
+  timer=setInterval(()=>{
+    t--;
+    document.getElementById("timer").textContent=t;
+    if(t<=0){
+      clearInterval(timer);
+      if(!answered){
+        finish(false,0,sec);
       }
-    },1000);
-  }
-
-  function lock(){
-    document.querySelectorAll(".ans").forEach(b=>b.disabled=true);
-  }
-
-  function answer(choice){
-    if(answered) return;
-    answered=true;
-    lock();
-    clearInterval(timer);
-
-    const elapsed = (Date.now() - startTs)/1000;
-    const timeTaken = Math.min(question.timeLimit, elapsed);
-
-    const correct = (choice === question.correctIndex);
-    let score = 0;
-    if(correct){
-      score = Math.max(0, Math.floor((question.timeLimit - timeTaken) * 10));
-      document.getElementById("scoreBox").textContent = "Score: " + score;
     }
+  },1000);
+}
 
-    finish(correct, score, timeTaken);
+function answer(choice){
+  if(answered) return;
+  answered=true;
+  clearInterval(timer);
+
+  const elapsed=(Date.now()-startTime)/1000;
+  const timeTaken=Math.min(question.timeLimit,elapsed);
+
+  let score=0;
+  const correct=(choice===question.correctIndex);
+
+  if(correct){
+    score=Math.max(0,Math.floor((question.timeLimit-timeTaken)*10));
   }
 
-  async function finish(correct, score, timeTaken){
-    // منع تكرار على نفس الجهاز
-    localStorage.setItem("kahoot_done_" + email, "1");
+  finish(correct,score,timeTaken);
+}
 
-    document.getElementById("resultTitle").textContent = correct ? "✅ Correct!" : "❌ Wrong!";
-    document.getElementById("resultDetails").textContent =
-      `Score: ${score} | Time: ${timeTaken.toFixed(1)}s`;
+async function finish(correct,score,timeTaken){
 
-    show("resultScreen");
+  document.getElementById("questionScreen").classList.add("hidden");
+  document.getElementById("resultScreen").classList.remove("hidden");
 
-    const status = document.getElementById("sendStatus");
-    status.textContent = "جارٍ إرسال النتيجة…";
+  document.getElementById("resultTitle").textContent=
+  correct?"✅ Correct!":"❌ Wrong!";
 
-    try{
-      await fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-          email, name,
-          score,
-          time: timeTaken.toFixed(1)
-        })
-      });
-      status.textContent = "✅ تم إرسال النتيجة (شيكي الشيت)";
-    }catch(e){
-      console.log(e);
-      status.textContent = "❌ الإرسال فشل — ابعتيلي Screenshot من Deploy";
-    }
-  }
+  document.getElementById("resultDetails").textContent=
+  `Score: ${score} | Time: ${timeTaken.toFixed(1)}s`;
 
-  function show(id){
-    ["loginScreen","questionScreen","resultScreen"].forEach(x=>{
-      document.getElementById(x).classList.toggle("hidden", x!==id);
+  const status=document.getElementById("sendStatus");
+
+  try{
+    await fetch(APPS_SCRIPT_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        email:email,
+        name:name,
+        score:score,
+        time:timeTaken.toFixed(1)
+      })
     });
+
+    status.textContent="✅ تم إرسال النتيجة (شيكي الشيت)";
   }
+  catch(e){
+    status.textContent="❌ الإرسال فشل — تأكدي من Deploy";
+  }
+}
+
 </script>
 
 </body>
