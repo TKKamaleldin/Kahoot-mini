@@ -4,20 +4,44 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Kahoot Mini</title>
+
   <style>
-    body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
-    .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+    body{
+      margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden
+    }
+    .screen{
+      position:fixed;inset:0;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:12px
+    }
     .hidden{display:none!important}
-    input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
-    button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
-    #timer{width:64px;height:64px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;font-size:26px}
-    .answers{width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr}
-    .ans{width:100%;height:100%;font-size:22px;color:#fff;border:none}
-    .red{background:#e21b3c}.blue{background:#1368ce}.yellow{background:#d89e00;color:#000}.green{background:#26890c}
-    .card{background:#1b1b1b;padding:18px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    .small{opacity:.8;font-size:14px}
+    input{
+      padding:12px;font-size:18px;width:280px;border-radius:10px;border:none
+    }
+    button{
+      padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer
+    }
+    #timer{
+      width:64px;height:64px;border-radius:50%;background:#000;
+      display:flex;align-items:center;justify-content:center;font-size:26px
+    }
+    .answers{
+      width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr
+    }
+    .ans{
+      width:100%;height:100%;font-size:22px;color:#fff;border:none
+    }
+    .red{background:#e21b3c}
+    .blue{background:#1368ce}
+    .yellow{background:#d89e00;color:#000}
+    .green{background:#26890c}
+    .card{
+      background:#1b1b1b;padding:18px;border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.35)
+    }
+    .small{opacity:.85;font-size:14px}
   </style>
 </head>
+
 <body>
 
 <!-- LOGIN -->
@@ -26,8 +50,10 @@
     <h1 style="margin:0 0 8px">Kahoot Mini</h1>
     <div class="small">اكتبي بياناتك وابدأي</div>
     <div style="height:10px"></div>
+
     <input id="nameInput" placeholder="Name" />
     <input id="emailInput" placeholder="Email" />
+
     <button onclick="startGame()">Start</button>
     <div class="small" id="loginMsg"></div>
   </div>
@@ -56,21 +82,25 @@
     <h1 id="resultTitle" style="margin:0 0 8px"></h1>
     <div id="resultDetails" class="small"></div>
     <div style="height:12px"></div>
-    <div class="small">تم إرسال النتيجة ✅</div>
+    <div class="small">تم إرسال النتيجة ✅ (روحي للـ Sheet وتشيكي)</div>
   </div>
 </div>
 
+<!-- iframe hidden to submit the form without leaving the page -->
+<iframe name="hidden_iframe" style="display:none;"></iframe>
+
 <script>
-  // ====== GOOGLE FORM (بتاعك) ======
-  const FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeiDXe7u6rHkfm_6vJSmUiWTlC99ROruB8yhp6d689zQbUeyg/formResponse";
+  // ====== GOOGLE FORM INFO (بتاعك) ======
+  const FORM_ACTION_URL =
+    "https://docs.google.com/forms/d/e/1FAIpQLSeiDXe7u6rHkfm_6vJSmUiWTlC99ROruB8yhp6d689zQbUeyg/formResponse";
 
   const ENTRY_EMAIL = "entry.48431141";
   const ENTRY_NAME  = "entry.152283956";
   const ENTRY_SCORE = "entry.352367407";
   const ENTRY_TIME  = "entry.1561619053";
-  // ================================
+  // ======================================
 
-  // ====== GAME CONFIG ======
+  // ====== QUESTION CONFIG ======
   const question = {
     text: "What is the capital of Egypt?",
     options: ["Alexandria","Cairo","Giza","Luxor"],
@@ -78,11 +108,13 @@
     timeLimit: 20
   };
 
-  let email="", name="";
-  let startTs=0;
-  let t=20, timer=null;
-  let totalScore=0;
-  let answered=false;
+  let email = "";
+  let name  = "";
+  let startTs = 0;
+  let timer = null;
+  let t = 20;
+  let answered = false;
+  let totalScore = 0;
 
   function startGame(){
     name = document.getElementById("nameInput").value.trim();
@@ -96,25 +128,29 @@
       return;
     }
 
-    // منع تكرار اللعب على نفس الجهاز (اختياري)
+    // منع إعادة المحاولة على نفس الجهاز لنفس الإيميل (اختياري)
     const key = "kahoot_done_" + email;
     if(localStorage.getItem(key) === "1"){
       msg.textContent = "إنتِ حلّيتي قبل كده على نفس الجهاز.";
       return;
     }
 
-    show("questionScreen");
+    showScreen("questionScreen");
     loadQuestion();
   }
 
   function loadQuestion(){
-    answered=false;
-    totalScore=0;
-    document.getElementById("scoreBox").textContent = "Score: 0";
+    answered = false;
     document.getElementById("qText").textContent = question.text;
 
     const btns = document.querySelectorAll(".ans");
-    btns.forEach((b,i)=>{ b.textContent = question.options[i]; b.disabled=false; });
+    btns.forEach((b,i)=>{
+      b.textContent = question.options[i];
+      b.disabled = false;
+    });
+
+    totalScore = 0;
+    document.getElementById("scoreBox").textContent = "Score: 0";
 
     startTs = Date.now();
     startTimer(question.timeLimit);
@@ -128,32 +164,35 @@
     timer = setInterval(()=>{
       t--;
       document.getElementById("timer").textContent = t;
-      if(t<=0){
+
+      if(t <= 0){
         clearInterval(timer);
         lockButtons();
         if(!answered){
+          // الوقت خلص بدون إجابة
           finish(false, 0, seconds);
         }
       }
-    },1000);
+    }, 1000);
   }
 
   function lockButtons(){
-    document.querySelectorAll(".ans").forEach(b=>b.disabled=true);
+    document.querySelectorAll(".ans").forEach(b => b.disabled = true);
   }
 
   function answer(choice){
     if(answered) return;
-    answered=true;
+    answered = true;
+
     lockButtons();
     clearInterval(timer);
 
-    const elapsedSec = (Date.now() - startTs)/1000;
-    const timeTaken = Math.min(question.timeLimit, elapsedSec);
+    const elapsed = (Date.now() - startTs) / 1000;
+    const timeTaken = Math.min(question.timeLimit, elapsed);
 
     const correct = (choice === question.correctIndex);
-    let score = 0;
 
+    let score = 0;
     if(correct){
       score = Math.max(0, Math.floor((question.timeLimit - timeTaken) * 10));
       totalScore += score;
@@ -163,35 +202,57 @@
     finish(correct, score, timeTaken);
   }
 
-  async function finish(correct, score, timeTaken){
-    // منع تكرار اللعب على نفس الجهاز
+  function finish(correct, score, timeTaken){
+    // منع إعادة على نفس الجهاز
     localStorage.setItem("kahoot_done_" + email, "1");
 
     document.getElementById("resultTitle").textContent = correct ? "✅ Correct!" : "❌ Wrong!";
     document.getElementById("resultDetails").textContent =
       `Score: ${score} | Time: ${timeTaken.toFixed(1)}s`;
 
-    show("resultScreen");
+    showScreen("resultScreen");
 
-    // إرسال للـ Google Form في الخلفية
-    try{
-      const fd = new FormData();
-      fd.append(ENTRY_EMAIL, email);
-      fd.append(ENTRY_NAME, name);
-      fd.append(ENTRY_SCORE, String(score));
-      fd.append(ENTRY_TIME, String(timeTaken.toFixed(1)));
-
-      await fetch(FORM_ACTION_URL, { method:"POST", mode:"no-cors", body: fd });
-    }catch(e){
-      console.log("Send failed", e);
-    }
+    // ✅ إرسال النتيجة للفورم بالطريقة المضمونة (form submit مخفي)
+    submitToGoogleForm(email, name, score, timeTaken.toFixed(1));
   }
 
-  function show(id){
+  function submitToGoogleForm(emailVal, nameVal, scoreVal, timeVal){
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = FORM_ACTION_URL;
+    form.target = "hidden_iframe";
+
+    // inputs hidden
+    form.innerHTML = `
+      <input type="hidden" name="${ENTRY_EMAIL}" value="${escapeHtml(emailVal)}">
+      <input type="hidden" name="${ENTRY_NAME}"  value="${escapeHtml(nameVal)}">
+      <input type="hidden" name="${ENTRY_SCORE}" value="${escapeHtml(String(scoreVal))}">
+      <input type="hidden" name="${ENTRY_TIME}"  value="${escapeHtml(String(timeVal))}">
+    `;
+
+    document.body.appendChild(form);
+    form.submit();
+
+    // تنظيف
+    setTimeout(()=> form.remove(), 1000);
+  }
+
+  function showScreen(id){
     ["loginScreen","questionScreen","resultScreen"].forEach(x=>{
-      document.getElementById(x).classList.toggle("hidden", x!==id);
+      document.getElementById(x).classList.toggle("hidden", x !== id);
     });
   }
+
+  // حماية بسيطة عشان القيم ما تكسرش الـ HTML
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
 </script>
+
 </body>
 </html>
