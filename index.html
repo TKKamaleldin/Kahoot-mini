@@ -1,26 +1,111 @@
 <!doctype html>
-<html lang="ar">
+<html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Kahoot Mini</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Fawazeer</title>
 
-  <style>
-    body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
-    .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
-    .hidden{display:none!important}
-    input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
-    button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
-    #timer{width:70px;height:70px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;font-size:28px}
-    .answers{width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr}
-    .ans{width:100%;height:100%;font-size:22px;color:#fff;border:none}
-    .red{background:#e21b3c}
-    .blue{background:#1368ce}
-    .yellow{background:#d89e00;color:#000}
-    .green{background:#26890c}
-    .card{background:#1b1b1b;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    .small{opacity:.85;font-size:14px}
-  </style>
+<style>
+body{
+  margin:0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg,#0f0f0f,#1c1c1c);
+  color:#fff;
+}
+
+.screen{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.hidden{display:none!important}
+
+.card{
+  background:#1b1b1b;
+  padding:40px;
+  border-radius:18px;
+  box-shadow:0 20px 50px rgba(0,0,0,.6);
+  min-width:420px;
+}
+
+h1{
+  margin:0 0 20px;
+  font-weight:600;
+  letter-spacing:1px;
+}
+
+input{
+  width:100%;
+  padding:14px;
+  margin-bottom:12px;
+  border-radius:10px;
+  border:none;
+  font-size:16px;
+  background:#2a2a2a;
+  color:#fff;
+}
+
+input::placeholder{color:#aaa}
+
+button{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:10px;
+  font-size:16px;
+  cursor:pointer;
+  background:#ffffff;
+  color:#000;
+  font-weight:600;
+  transition:.2s;
+}
+
+button:hover{
+  transform:translateY(-2px);
+}
+
+#timer{
+  width:80px;
+  height:80px;
+  border-radius:50%;
+  background:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:28px;
+  margin-bottom:20px;
+}
+
+.answers{
+  width:100%;
+  height:60vh;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+}
+
+.ans{
+  font-size:22px;
+  color:#fff;
+  border:none;
+  cursor:pointer;
+}
+
+.red{background:#e21b3c}
+.blue{background:#1368ce}
+.yellow{background:#d89e00;color:#000}
+.green{background:#26890c}
+
+.resultCard{
+  background:#1b1b1b;
+  padding:30px;
+  border-radius:18px;
+  text-align:center;
+  box-shadow:0 20px 50px rgba(0,0,0,.6);
+}
+</style>
 </head>
 
 <body>
@@ -28,26 +113,17 @@
 <!-- LOGIN -->
 <div id="loginScreen" class="screen">
   <div class="card">
-    <h1 style="margin:0 0 8px">Kahoot Mini</h1>
-    <div class="small">اكتبي بياناتك وابدأي</div>
-    <div style="height:10px"></div>
-
-    <input id="nameInput" placeholder="Name"/>
-    <input id="emailInput" placeholder="Email"/>
-
+    <h1>Fawazeer</h1>
+    <input id="nameInput" placeholder="Full Name"/>
+    <input id="emailInput" placeholder="Email Address"/>
     <button onclick="startGame()">Start</button>
-    <div class="small" id="loginMsg"></div>
   </div>
 </div>
 
 <!-- QUESTION -->
-<div id="questionScreen" class="screen hidden">
-  <div style="display:flex;gap:14px;align-items:center">
-    <div id="timer">20</div>
-    <div id="scoreBox" class="small">Score: 0</div>
-  </div>
-
-  <h2 id="qText" style="text-align:center;margin:10px 18px">Loading...</h2>
+<div id="questionScreen" class="screen hidden" style="flex-direction:column">
+  <div id="timer">20</div>
+  <h2 id="qText"></h2>
 
   <div class="answers">
     <button class="ans red" onclick="answer(0)"></button>
@@ -59,143 +135,126 @@
 
 <!-- RESULT -->
 <div id="resultScreen" class="screen hidden">
-  <div class="card" style="text-align:center;min-width:320px">
-    <h1 id="resultTitle" style="margin:0 0 8px"></h1>
-    <div id="resultDetails" class="small"></div>
-    <div style="height:12px"></div>
-    <div class="small" id="sendStatus">جارٍ إرسال النتيجة…</div>
+  <div class="resultCard">
+    <h2 id="resultTitle"></h2>
+    <p id="resultDetails"></p>
   </div>
 </div>
 
 <script>
-  // ✅ Apps Script Web App URL (الجديد)
-  const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzpflfT37j0aWTZzpeUPVlbnu94mdIis1AuyWvHFJ6qv25SscFNutz_-1VVRboYLEKIPw/exec";
 
-  // ✅ سؤال واحد + 20 ثانية
-  const question = {
-    text: "What is the capital of Egypt?",
-    options: ["Alexandria","Cairo","Giza","Luxor"],
-    correctIndex: 1,
-    timeLimit: 20
-  };
+const APPS_SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbzpflfT37j0aWTZzpeUPVlbnu94mdIis1AuyWvHFJ6qv25SscFNutz_-1VVRboYLEKIPw/exec";
 
-  let email="", name="";
-  let startTime=0;
-  let timer=null;
-  let answered=false;
+const question = {
+  text: "What is the capital of Egypt?",
+  options: ["Alexandria","Cairo","Giza","Luxor"],
+  correctIndex: 1,
+  timeLimit: 20
+};
 
-  function startGame(){
-    name = document.getElementById("nameInput").value.trim();
-    email = document.getElementById("emailInput").value.trim().toLowerCase();
+let email="", name="";
+let startTime=0;
+let timer=null;
+let answered=false;
 
-    const msg = document.getElementById("loginMsg");
-    msg.textContent = "";
+function startGame(){
+  name=document.getElementById("nameInput").value.trim();
+  email=document.getElementById("emailInput").value.trim().toLowerCase();
 
-    if(!name || !email){
-      msg.textContent = "اكتبي الاسم والإيميل";
-      return;
-    }
-
-    show("questionScreen");
-    loadQuestion();
+  if(!name || !email){
+    alert("Please enter your name and email.");
+    return;
   }
 
-  function loadQuestion(){
-    answered = false;
-    document.getElementById("scoreBox").textContent = "Score: 0";
-    document.getElementById("qText").textContent = question.text;
+  show("questionScreen");
+  loadQuestion();
+}
 
-    const btns = document.querySelectorAll(".ans");
-    btns.forEach((b,i)=>{
-      b.textContent = question.options[i];
-      b.disabled = false;
-    });
+function loadQuestion(){
+  answered=false;
+  document.getElementById("qText").textContent=question.text;
 
-    startTime = Date.now();
-    startTimer(question.timeLimit);
-  }
+  const btns=document.querySelectorAll(".ans");
+  btns.forEach((b,i)=>{
+    b.textContent=question.options[i];
+    b.disabled=false;
+  });
 
-  function startTimer(sec){
-    clearInterval(timer);
-    let t = sec;
-    document.getElementById("timer").textContent = t;
+  startTime=Date.now();
+  startTimer(question.timeLimit);
+}
 
-    timer = setInterval(()=>{
-      t--;
-      document.getElementById("timer").textContent = t;
+function startTimer(sec){
+  clearInterval(timer);
+  let t=sec;
+  document.getElementById("timer").textContent=t;
 
-      if(t <= 0){
-        clearInterval(timer);
-        if(!answered){
-          finish(false, 0, sec);
-        }
+  timer=setInterval(()=>{
+    t--;
+    document.getElementById("timer").textContent=t;
+
+    if(t<=0){
+      clearInterval(timer);
+      if(!answered){
+        finish(false,0,sec);
       }
-    },1000);
-  }
-
-  function lockButtons(){
-    document.querySelectorAll(".ans").forEach(b => b.disabled = true);
-  }
-
-  function answer(choice){
-    if(answered) return;
-    answered = true;
-
-    lockButtons();
-    clearInterval(timer);
-
-    const elapsed = (Date.now() - startTime)/1000;
-    const timeTaken = Math.min(question.timeLimit, elapsed);
-
-    const correct = (choice === question.correctIndex);
-    let score = 0;
-
-    if(correct){
-      score = Math.max(0, Math.floor((question.timeLimit - timeTaken) * 10));
-      document.getElementById("scoreBox").textContent = "Score: " + score;
     }
+  },1000);
+}
 
-    finish(correct, score, timeTaken);
+function answer(choice){
+  if(answered) return;
+  answered=true;
+
+  clearInterval(timer);
+
+  const elapsed=(Date.now()-startTime)/1000;
+  const timeTaken=Math.min(question.timeLimit,elapsed);
+
+  let score=0;
+  const correct=(choice===question.correctIndex);
+
+  if(correct){
+    score=Math.max(0,Math.floor((question.timeLimit-timeTaken)*10));
   }
 
-  async function finish(correct, score, timeTaken){
-    show("resultScreen");
+  finish(correct,score,timeTaken);
+}
 
-    document.getElementById("resultTitle").textContent =
-      correct ? "✅ Correct!" : "❌ Wrong!";
+async function finish(correct,score,timeTaken){
 
-    document.getElementById("resultDetails").textContent =
-      `Score: ${score} | Time: ${timeTaken.toFixed(1)}s`;
+  show("resultScreen");
 
-    const status = document.getElementById("sendStatus");
-    status.textContent = "جارٍ إرسال النتيجة…";
+  document.getElementById("resultTitle").textContent =
+    correct ? "Correct!" : "Incorrect";
 
-    try{
-      // ✅ FormData (أفضل لتفادي CORS/preflight)
-      const fd = new FormData();
-      fd.append("email", email);
-      fd.append("name", name);
-      fd.append("score", String(score));
-      fd.append("time", timeTaken.toFixed(1));
+  document.getElementById("resultDetails").textContent =
+    `Score: ${score} | Time: ${timeTaken.toFixed(1)} seconds`;
 
-      await fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        body: fd
-      });
+  try{
+    const fd=new FormData();
+    fd.append("email",email);
+    fd.append("name",name);
+    fd.append("score",String(score));
+    fd.append("time",timeTaken.toFixed(1));
 
-      status.textContent = "✅ تم إرسال النتيجة (شيكي الشيت)";
-    }catch(e){
-      console.log(e);
-      status.textContent = "❌ الإرسال فشل — افتحي Console وشوفي error";
-    }
-  }
-
-  function show(id){
-    ["loginScreen","questionScreen","resultScreen"].forEach(x=>{
-      document.getElementById(x).classList.toggle("hidden", x !== id);
+    await fetch(APPS_SCRIPT_URL,{
+      method:"POST",
+      body:fd
     });
+
+  }catch(e){
+    console.log(e);
   }
+}
+
+function show(id){
+  ["loginScreen","questionScreen","resultScreen"].forEach(x=>{
+    document.getElementById(x).classList.toggle("hidden",x!==id);
+  });
+}
+
 </script>
 
 </body>
