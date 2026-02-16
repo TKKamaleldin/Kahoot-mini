@@ -113,29 +113,28 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
   //for sounds:
   const sfx = {
-    login: "sounds/login.mp3",         // for login sound ✅ صح
-    timer: "sounds/timer.mp3",         // for timer sound (tick) ✅ صح
-    timeup: "sounds/timeup.mp3",       // for time up sound ✅ صح
-    points: "sounds/points.mp3",       // for points added sound ✅ صح
-    correct: "sounds/correct.mp3",     // for correct answer sound ✅ صح
-    incorrect: "sounds/incorrect.mp3"  // for incorrect answer sound ✅ صح
+    login: "sounds/login.mp3",         // for login sound
+    timer: "sounds/timer.mp3",         // for timer sound (tick) 
+    timeup: "sounds/timeup.mp3",       // for time up sound 
+    points: "sounds/points.mp3",       // for points added sound 
+    correct: "sounds/correct.mp3",     // for correct answer sound 
+    incorrect: "sounds/incorrect.mp3"  // for incorrect answer sound
   };
 
   // for playing sound
-  function playSound(src, vol=0.7){ // ✅ صح
+  function playSound(src, vol=0.7){ 
     try{
-      const a = new Audio(src);         // ✅ صح
-      a.volume = vol;                   // ✅ صح
+      const a = new Audio(src);         
+      a.volume = vol;                  
       a.currentTime = 0;                // reset sound to start
-      a.play().catch(err => console.log("Audio blocked/error:", err, src)); // ✅ صح
+      a.play().catch(err => console.log("Audio blocked/error:", err, src)); 
     }catch(e){
-      console.log("Audio error:", e, src); // ✅ صح
+      console.log("Audio error:", e, src); 
     }
   }
-
-  // ✅ صح: تشغيل صوت قبل الـ login (المتصفح لازم أول Click من المستخدم)
+// adding click event listener for login sound 
   document.addEventListener("click", () => {
-    playSound(sfx.login, 0.7); // ✅ صح
+    playSound(sfx.login, 0.7); 
   }, { once: true });
 
   //to prevent the user to answer twice
@@ -156,16 +155,15 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       msg.textContent="Please enter your name and email.";
       return;
     }
-
-    // ✅ صح: منع نفس الإيميل يشارك أكتر من مرة على نفس الجهاز
-    const key = "played_" + email; // ✅ صح
-    if(localStorage.getItem(key) === "yes"){ // ✅ صح
-      msg.textContent = "This email already played before (not allowed)."; // ✅ صح
-      return; // ✅ صح
+//preventing the player to use his email twice 
+    const key = "played_" + email; 
+    if(localStorage.getItem(key) === "yes"){
+      msg.textContent = "This email already played before (not allowed).";
+      return; 
     }
 
-    // ✅ صح: login sound after valid input and pressing Start
-    playSound(sfx.login, 0.7); // ✅ صح
+    //login sound after valid input and pressing Start
+    playSound(sfx.login, 0.7);
 
     show("questionScreen");
     loadQuestion();
@@ -197,9 +195,9 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       t--;
       document.getElementById("timer").textContent=t;   //updae it
 
-      // ✅ صح: timer tick sound every second (while time is still running)
+      // timer tick sound every second (while time is still running)
       if(t > 0){
-        playSound(sfx.timer, 0.25); // ✅ صح
+        playSound(sfx.timer, 0.25);
       }
 
       //if time reaches zero or user didn't answer and stop it and lock the buttons 
@@ -208,7 +206,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
         lockButtons();
         if(!answered){
           flash(false);
-          playSound(sfx.timeup, 0.8); // ✅ صح
+          playSound(sfx.timeup, 0.8); 
           finish(false,0,sec,true);
         }
       }
@@ -246,20 +244,20 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     if(correct){
       flash(true);
 
-      playSound(sfx.correct, 0.7); // ✅ صح
+      playSound(sfx.correct, 0.7);
 
       score=Math.max(0,Math.floor((question.timeLimit-timeTaken)*10));  // calculate score compare to the time
       document.getElementById("scoreBox").textContent="Score: "+score;   // update score display
 
       if(score > 0){
-        playSound(sfx.points, 0.6); // ✅ صح
+        playSound(sfx.points, 0.6); 
       }
 
       setTimeout(()=>finish(true,score,timeTaken,false), 450);    // wait before finishing
     }else{
       flash(false); // indicate wrong answer
 
-      playSound(sfx.incorrect, 0.7); // ✅ صح
+      playSound(sfx.incorrect, 0.7); 
 
       document.getElementById("questionScreen").classList.add("shake");
       setTimeout(()=>document.getElementById("questionScreen").classList.remove("shake"), 260);
@@ -294,8 +292,9 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       }else{
         status.textContent="Result saved ✅";
 
-        // ✅ صح: حفظ إن الإيميل لعب (بعد الحفظ الناجح)
-        localStorage.setItem("played_" + email, "yes"); // ✅ صح
+
+
+        localStorage.setItem("played_" + email, "yes");
       }
 
     }catch(e){
