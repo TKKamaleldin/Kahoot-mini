@@ -1,34 +1,47 @@
-<!doctype html>
-<html lang="en">
+<!--Html Part-->
+<!doctype html>                    <!--Html-->
+<html lang="en">                    <!--Language-->
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Fawazeer</title>
+<meta charset="utf-8"/>             <!--All alphabetic characters-->
+<meta name="viewport" content="width=device-width,initial-scale=1"/>     <!--If someone wants to open it in their phones -->
+<title>Fawazeer</title>            <!--Name for my page -->
 
+
+
+<!--CSS part-->
 <style>
-body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
+/*Remove margins, black background and white text*/
+body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}    
+/*make it fill screen Using flex direction*/
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+/* Hide elements */
 .hidden{display:none!important}
+/*inner size for the input which is email and name  */
 input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
+/*same as input but for buttons*/
 button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
+/*make tinmer button circle*/
 #timer{width:70px;height:70px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;font-size:28px}
+
 .answers{width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr}
+
 .ans{width:100%;height:100%;font-size:22px;color:#fff;border:none;transition:transform .08s ease, filter .08s ease}
+/*shrink the button when you press on it*/
 .ans:active{transform:scale(.98)}
 .red{background:#e21b3c}.blue{background:#1368ce}.yellow{background:#d89e00;color:#000}.green{background:#26890c}
 .card{background:#1b1b1b;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .small{opacity:.85;font-size:14px}
 
-/* ✅ Effects */
+/*Animation */
 .flash-green{animation:flashGreen .35s ease 2}
 @keyframes flashGreen { 0%{background:#111} 50%{background:#0c6} 100%{background:#111} }
 
 .flash-red{animation:flashRed .35s ease 2}
 @keyframes flashRed { 0%{background:#111} 50%{background:#e21b3c} 100%{background:#111} }
-
+/*for differenciate between the right and wrong answers*/
 .correct-btn{filter:brightness(1.15); outline:4px solid rgba(0,255,150,.55)}
 .wrong-btn{filter:grayscale(.25) brightness(.85); outline:4px solid rgba(255,0,0,.35)}
-
+/*shake when answer*/
 .shake{animation:shake .25s ease 1}
 @keyframes shake{
   0%{transform:translateX(0)}
@@ -42,7 +55,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
 <body>
 
-<!-- LOGIN -->
+  <!--for making login screen-->
 <div id="loginScreen" class="screen">
   <div class="card">
     <h1>Fawazeer</h1>
@@ -50,18 +63,19 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     <input id="nameInput" placeholder="Name"/>
     <input id="emailInput" placeholder="Email"/>
     <button onclick="startGame()">Start</button>
-
+    <!--for making login message-->
     <div class="small" id="loginMsg"></div>
   </div>
 </div>
+<!--Finishing it -->
 
-<!-- QUESTION -->
+<!-- QUESTION are hidden until login -->
 <div id="questionScreen" class="screen hidden">
   <div style="display:flex;gap:14px;align-items:center">
     <div id="timer">20</div>
     <div id="scoreBox" class="small">Score: 0</div>
   </div>
-
+<!--For making question area and waiting until js gives the question-->
   <h2 id="qText">Loading...</h2>
 
   <div class="answers">
@@ -72,7 +86,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   </div>
 </div>
 
-<!-- RESULT -->
+<!-- RESULT are hidden until the question time ends -->
 <div id="resultScreen" class="screen hidden">
   <div class="card" style="text-align:center;min-width:320px">
     <h1 id="resultTitle"></h1>
@@ -82,7 +96,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 </div>
 
 <script>
-  // ✅ Web App URL (الجديد)
+  //Google Apps Script URL
   const APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbzpflfT37j0aWTZzpeUPVlbnu94mdIis1AuyWvHFJ6qv25SscFNutz_-1VVRboYLEKIPw/exec";
 
@@ -92,19 +106,22 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     correctIndex: 1,
     timeLimit: 20
   };
-
+//Storing the data from the user at let which is variable not fixed
   let email="", name="";
   let startTime=0;
   let timer=null;
+  //to prevent the user to answer twice
   let answered=false;
-
+// start the game when the user is entering start
   function startGame(){
+    //read the user input and removing the space and lowercasing the email
     name=document.getElementById("nameInput").value.trim();
     email=document.getElementById("emailInput").value.trim().toLowerCase();
-
+//login message
     const msg=document.getElementById("loginMsg");
     msg.textContent="";
 
+    // if the name or email is invalid show message and return
     if(!name || !email){
       msg.textContent="Please enter your name and email.";
       return;
@@ -129,21 +146,21 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     startTime=Date.now();
     startTimer(question.timeLimit);
   }
-
+// calculating the time for user 
   function startTimer(sec){
+    // clear any existing timer
     clearInterval(timer);
-    let t=sec;
+    let t=sec;     // remaining time
     document.getElementById("timer").textContent=t;
 
-    timer=setInterval(()=>{
+    timer=setInterval(()=>{           //code is still running at this point every one second
       t--;
-      document.getElementById("timer").textContent=t;
-
+      document.getElementById("timer").textContent=t;   //updae it
+//if time reaches zero or user didn't answer and stop it and lock the buttons 
       if(t<=0){
         clearInterval(timer);
         lockButtons();
         if(!answered){
-          // وقت خلص
           flash(false);
           finish(false,0,sec,true);
         }
@@ -160,8 +177,9 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     void document.body.offsetWidth; // restart animation
     document.body.classList.add(correct ? "flash-green" : "flash-red");
   }
-
+// it will work if the user answers
   function answer(choice){
+    // prevent multiple answers
     if(answered) return;
     answered=true;
 
@@ -169,22 +187,22 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     lockButtons();
 
     const elapsed=(Date.now()-startTime)/1000;
+    // calculate the time taken
     const timeTaken=Math.min(question.timeLimit,elapsed);
-
+// compare the user's answer with the correct answer
     const correct=(choice===question.correctIndex);
     let score=0;
-
-    const btns=document.querySelectorAll(".ans");
-    btns[question.correctIndex].classList.add("correct-btn");
-    if(!correct) btns[choice].classList.add("wrong-btn");
+    const btns=document.querySelectorAll(".ans"); // get all answer buttons
+    btns[question.correctIndex].classList.add("correct-btn");    // highlight correct answer
+    if(!correct) btns[choice].classList.add("wrong-btn");   // highlight wrong answer
 
     if(correct){
       flash(true);
-      score=Math.max(0,Math.floor((question.timeLimit-timeTaken)*10));
-      document.getElementById("scoreBox").textContent="Score: "+score;
-      setTimeout(()=>finish(true,score,timeTaken,false), 450);
+      score=Math.max(0,Math.floor((question.timeLimit-timeTaken)*10));  // calculate score compare to the time
+      document.getElementById("scoreBox").textContent="Score: "+score;   // update score display
+      setTimeout(()=>finish(true,score,timeTaken,false), 450);    // wait before finishing
     }else{
-      flash(false);
+      flash(false); // indicate wrong answer
       document.getElementById("questionScreen").classList.add("shake");
       setTimeout(()=>document.getElementById("questionScreen").classList.remove("shake"), 260);
       setTimeout(()=>finish(false,0,timeTaken,false), 450);
@@ -192,25 +210,25 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   }
 
   async function finish(correct,score,timeTaken,timedOut){
-    show("resultScreen");
+    show("resultScreen"); // show result screen
 
-    document.getElementById("resultTitle").textContent =
+    document.getElementById("resultTitle").textContent = 
       timedOut ? "Time’s up!" : (correct ? "Correct!" : "Incorrect");
 
     document.getElementById("resultDetails").textContent =
       `Score: ${score} | Time: ${timeTaken.toFixed(1)}s`;
 
-    const status=document.getElementById("sendStatus");
+    const status=document.getElementById("sendStatus");    // show saving status
     status.textContent="Saving your result...";
 
-    try{
-      const fd=new FormData();
+    try{                       // prepare data to send to Google Apps Script
+      const fd=new FormData();     // create a new FormData object  to send data through it 
       fd.append("email",email);
       fd.append("name",name);
       fd.append("score",String(score));
       fd.append("time",timeTaken.toFixed(1));
 
-      const res = await fetch(APPS_SCRIPT_URL,{ method:"POST", body:fd });
+      const res = await fetch(APPS_SCRIPT_URL,{ method:"POST", body:fd });      //link for Google Apps Script POST means send data for this link 
       const json = await res.json().catch(()=>({ok:true}));
 
       if(json && json.ok === false){
