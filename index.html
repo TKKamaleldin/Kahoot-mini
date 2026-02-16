@@ -110,6 +110,33 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   let email="", name="";
   let startTime=0;
   let timer=null;
+
+
+
+
+  //for sounds:
+const sfx = {
+  login: new Audio("sounds/login.mp3"),         // for login sound
+  timer: new Audio("sounds/timer.mp3"),         // for timer sound (tick)
+  timeup: new Audio("sounds/timeup.mp3"),       // for time up sound
+  points: new Audio("sounds/points.mp3"),       // for points added sound
+  correct: new Audio("sounds/correct.mp3"),     // for correct answer sound
+  incorrect: new Audio("sounds/incorrect.mp3")  // for incorrect answer sound
+};
+
+sfx.timer.volume = 0.25;
+sfx.login.volume = 0.7;
+sfx.timeup.volume = 0.8;
+sfx.points.volume = 0.6;
+sfx.correct.volume = 0.7;
+sfx.incorrect.volume = 0.7;
+// for playing sound
+function playSound(a){
+  try{
+    a.currentTime = 0;       // reset sound to start
+    a.play().catch(()=>{});  // try to play without breaking the page if blocked
+  }catch(e){}
+}
   //to prevent the user to answer twice
   let answered=false;
 // start the game when the user is entering start
