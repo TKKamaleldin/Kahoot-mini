@@ -154,6 +154,15 @@ function playSound(a){
       return;
     }
 
+    alert("Starting..."); // simple test
+    playSound(sfx.login);
+
+    function playSound(a){
+  a.currentTime = 0;
+  a.play().catch(err => console.log("Audio blocked/error:", err));
+}
+
+
     show("questionScreen");
     loadQuestion();
   }
