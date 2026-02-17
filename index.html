@@ -4,9 +4,7 @@
 <head>
 <meta charset="utf-8"/>             <!--All alphabetic characters-->
 <meta name="viewport" content="width=device-width,initial-scale=1"/>     <!--If someone wants to open it in their phones -->
-<title>Fawazeer</title>            <!--Name for my page -->
-
-
+<title>SMCS Ramadan Fawazeer</title>            <!--Name for my page -->
 
 <!--CSS part-->
 <style>
@@ -16,7 +14,7 @@ body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
 /* Hide elements */
 .hidden{display:none!important}
-/*inner size for the input which is email and name  */
+/*inner size for the input which is ID and name  */
 input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
 /*same as input but for buttons*/
 button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
@@ -50,6 +48,67 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   75%{transform:translateX(-4px)}
   100%{transform:translateX(0)}
 }
+
+/* ✅ University logos */
+.logos{
+  position:absolute;
+  top:15px;
+  left:0;
+  right:0;
+  display:flex;
+  justify-content:space-between;
+  padding:0 18px;
+  pointer-events:none; /* so it won't block clicks */
+}
+.logo{
+  width:70px;
+  height:70px;
+  object-fit:contain;
+  opacity:.95;
+  filter: drop-shadow(0 0 4px rgba(0,0,0,0.45));
+}
+@media (max-width:480px){
+  .logo{width:50px;height:50px;}
+}
+
+/* ✅ Ramadan title bar */
+.ramadan-bar{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding:10px 14px;
+  border-radius:14px;
+  margin-bottom:12px;
+  backdrop-filter: blur(6px);
+}
+.ramadan-bar .title{
+  font-size:20px;
+  font-weight:700;
+  letter-spacing:.3px;
+}
+.ramadan-bar .icon{
+  font-size:22px;
+}
+
+/* ✅ Login background only */
+#loginScreen{
+  background: url("images/login-bg.jpg") center/cover no-repeat;
+}
+/* ✅ gray overlay فوق الصورة */
+#loginScreen::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,0.55);
+}
+/* ✅ عشان الكارت يفضل فوق الـ overlay */
+#loginScreen .card{
+  position:relative;
+  z-index:1;
+}
 </style>
 </head>
 
@@ -57,11 +116,22 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
   <!--for making login screen-->
 <div id="loginScreen" class="screen">
+
+  <!-- ✅ Logos (left & right) -->
+  <div class="logos">
+    <img src="images/logo.png" class="logo left" alt="University Logo Left">
+    <img src="images/logo.png" class="logo right" alt="University Logo Right">
+  </div>
+
   <div class="card">
-    <h1>Fawazeer</h1>
+    <div class="ramadan-bar">
+      <span class="icon">🌙</span>
+      <span class="title">SMCS Ramadan Fawazeer</span>
+      <span class="icon">🫘🍲</span>
+    </div>
 
     <input id="nameInput" placeholder="Name"/>
-    <input id="emailInput" placeholder="Email"/>
+    <input id="idInput" placeholder="Student ID"/>
     <button onclick="startGame()">Start</button>
     <!--for making login message-->
     <div class="small" id="loginMsg"></div>
@@ -71,6 +141,13 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
 <!-- QUESTION are hidden until login -->
 <div id="questionScreen" class="screen hidden">
+
+  <!-- ✅ Logos (left & right) -->
+  <div class="logos">
+    <img src="images/logo.png" class="logo left" alt="University Logo Left">
+    <img src="images/logo.png" class="logo right" alt="University Logo Right">
+  </div>
+
   <div style="display:flex;gap:14px;align-items:center">
     <div id="timer">20</div>
     <div id="scoreBox" class="small">Score: 0</div>
@@ -106,35 +183,66 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     correctIndex: 1,
     timeLimit: 20
   };
-//Storing the data from the user at let which is variable not fixed
-  let email="", name="";
+
+  //Storing the data from the user at let which is variable not fixed
+  let userId="", name="";   // ✅ changed from email to ID
   let startTime=0;
   let timer=null;
 
   //for sounds:
   const sfx = {
     login: "sounds/login.mp3",         // for login sound
-    timer: "sounds/timer.mp3",         // for timer sound (tick) 
-    timeup: "sounds/timeup.mp3",       // for time up sound 
-    points: "sounds/points.mp3",       // for points added sound 
-    correct: "sounds/correct.mp3",     // for correct answer sound 
+    timer: "sounds/timer.mp3",         // for timer sound (tick)
+    timeup: "sounds/timeup.mp3",       // for time up sound
+    points: "sounds/points.mp3",       // for points added sound
+    correct: "sounds/correct.mp3",     // for correct answer sound
     incorrect: "sounds/incorrect.mp3"  // for incorrect answer sound
   };
 
-  // for playing sound
-  function playSound(src, vol=0.7){ 
+  // ✅ Audio pool to prevent sounds overlapping
+  const audioPool = {};
+  let currentSFX = null;
+
+  function getAudio(src){
+    if(!audioPool[src]){
+      audioPool[src] = new Audio(src);
+      audioPool[src].preload = "auto";
+    }
+    return audioPool[src];
+  }
+
+  // mode: "sfx" for single sound effects, "timer" for timer sound
+  function playSound(src, vol=0.7, mode="sfx"){
     try{
-      const a = new Audio(src);         
-      a.volume = vol;                  
-      a.currentTime = 0;                // reset sound to start
-      a.play().catch(err => console.log("Audio blocked/error:", err, src)); 
+      if(mode === "sfx" && currentSFX){
+        currentSFX.pause();
+        currentSFX.currentTime = 0;
+      }
+
+      const a = getAudio(src);
+      a.pause();
+      a.currentTime = 0;
+      a.volume = vol;
+
+      a.play().catch(err => console.log("Audio blocked/error:", err, src));
+
+      if(mode === "sfx"){
+        currentSFX = a;
+      }
     }catch(e){
-      console.log("Audio error:", e, src); 
+      console.log("Audio error:", e, src);
     }
   }
-// adding click event listener for login sound 
+
+  function stopTimerSound(){
+    const t = getAudio(sfx.timer);
+    t.pause();
+    t.currentTime = 0;
+  }
+
+  // ✅ allow audio after first user interaction (browser rule)
   document.addEventListener("click", () => {
-    playSound(sfx.login, 0.7); 
+    playSound(sfx.login, 0.7, "sfx");
   }, { once: true });
 
   //to prevent the user to answer twice
@@ -142,28 +250,28 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
   // start the game when the user is entering start
   function startGame(){
-    //read the user input and removing the space and lowercasing the email
+    //read the user input and removing the space
     name=document.getElementById("nameInput").value.trim();
-    email=document.getElementById("emailInput").value.trim().toLowerCase();
+    userId=document.getElementById("idInput").value.trim(); // ✅ ID instead of email
 
     //login message
     const msg=document.getElementById("loginMsg");
     msg.textContent="";
 
-    // if the name or email is invalid show message and return
-    if(!name || !email){
-      msg.textContent="Please enter your name and email.";
+    // if the name or ID is invalid show message and return
+    if(!name || !userId){
+      msg.textContent="Please enter your name and ID.";
       return;
     }
-//preventing the player to use his email twice 
-    const key = "played_" + email; 
+
+    // ✅ prevent same ID from playing twice on same device
+    const key = "played_" + userId;
     if(localStorage.getItem(key) === "yes"){
-      msg.textContent = "This email already played before (not allowed).";
-      return; 
+      msg.textContent = "This ID already played before (not allowed).";
+      return;
     }
 
-    //login sound after valid input and pressing Start
-    playSound(sfx.login, 0.7);
+    playSound(sfx.login, 0.7, "sfx");
 
     show("questionScreen");
     loadQuestion();
@@ -184,10 +292,13 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     startTime=Date.now();
     startTimer(question.timeLimit);
   }
-// calculating the time for user 
+
+  // calculating the time for user 
   function startTimer(sec){
     // clear any existing timer
     clearInterval(timer);
+    stopTimerSound();
+
     let t=sec;     // remaining time
     document.getElementById("timer").textContent=t;
 
@@ -195,18 +306,19 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       t--;
       document.getElementById("timer").textContent=t;   //updae it
 
-      // timer tick sound every second (while time is still running)
+      // timer tick sound (same audio, no overlap)
       if(t > 0){
-        playSound(sfx.timer, 0.25);
+        playSound(sfx.timer, 0.25, "timer");
       }
 
       //if time reaches zero or user didn't answer and stop it and lock the buttons 
       if(t<=0){
         clearInterval(timer);
         lockButtons();
+        stopTimerSound();
         if(!answered){
           flash(false);
-          playSound(sfx.timeup, 0.8); 
+          playSound(sfx.timeup, 0.8, "sfx");
           finish(false,0,sec,true);
         }
       }
@@ -222,21 +334,25 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     void document.body.offsetWidth; // restart animation
     document.body.classList.add(correct ? "flash-green" : "flash-red");
   }
-// it will work if the user answers
+
+  // it will work if the user answers
   function answer(choice){
     // prevent multiple answers
     if(answered) return;
     answered=true;
 
     clearInterval(timer);
+    stopTimerSound();
     lockButtons();
 
     const elapsed=(Date.now()-startTime)/1000;
     // calculate the time taken
     const timeTaken=Math.min(question.timeLimit,elapsed);
-// compare the user's answer with the correct answer
+
+    // compare the user's answer with the correct answer
     const correct=(choice===question.correctIndex);
     let score=0;
+
     const btns=document.querySelectorAll(".ans"); // get all answer buttons
     btns[question.correctIndex].classList.add("correct-btn");    // highlight correct answer
     if(!correct) btns[choice].classList.add("wrong-btn");   // highlight wrong answer
@@ -244,20 +360,20 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     if(correct){
       flash(true);
 
-      playSound(sfx.correct, 0.7);
+      playSound(sfx.correct, 0.7, "sfx");
 
       score=Math.max(0,Math.floor((question.timeLimit-timeTaken)*10));  // calculate score compare to the time
       document.getElementById("scoreBox").textContent="Score: "+score;   // update score display
 
       if(score > 0){
-        playSound(sfx.points, 0.6); 
+        setTimeout(()=>playSound(sfx.points, 0.6, "sfx"), 150);
       }
 
       setTimeout(()=>finish(true,score,timeTaken,false), 450);    // wait before finishing
     }else{
       flash(false); // indicate wrong answer
 
-      playSound(sfx.incorrect, 0.7); 
+      playSound(sfx.incorrect, 0.7, "sfx");
 
       document.getElementById("questionScreen").classList.add("shake");
       setTimeout(()=>document.getElementById("questionScreen").classList.remove("shake"), 260);
@@ -279,7 +395,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
     try{                       // prepare data to send to Google Apps Script
       const fd=new FormData();     // create a new FormData object  to send data through it 
-      fd.append("email",email);
+      fd.append("id",userId);      // ✅ send ID instead of email
       fd.append("name",name);
       fd.append("score",String(score));
       fd.append("time",timeTaken.toFixed(1));
@@ -292,9 +408,8 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       }else{
         status.textContent="Result saved ✅";
 
-
-
-        localStorage.setItem("played_" + email, "yes");
+        // ✅ mark that this ID has played (on this device)
+        localStorage.setItem("played_" + userId, "yes");
       }
 
     }catch(e){
