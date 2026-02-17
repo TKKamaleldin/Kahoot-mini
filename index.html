@@ -95,20 +95,22 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
 /* ✅ Login background only */
 #loginScreen{
-  background: url("images/background.png") center/cover no-repeat;
+  background-image: url("./images/background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
-/* ✅ gray overlay فوق الصورة */
 #loginScreen::before{
   content:"";
   position:absolute;
   inset:0;
   background: rgba(0,0,0,0.55);
 }
-/* ✅ عشان الكارت يفضل فوق الـ overlay */
 #loginScreen .card{
   position:relative;
   z-index:1;
 }
+
 </style>
 </head>
 
