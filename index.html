@@ -1,25 +1,468 @@
-<!doctype html>
-<html lang="en">
+<!--Html Part-->
+<!doctype html>                    <!--Html-->
+<html lang="en">                    <!--Language-->
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Closed</title>
+<meta charset="utf-8"/>             <!--All alphabetic characters-->
+<meta name="viewport" content="width=device-width,initial-scale=1"/>     <!--If someone wants to open it in their phones -->
+<title>SMCS Ramadan Fawazeer</title>            <!--Name for my page -->
 
+<!--CSS part-->
 <style>
-body{
-  margin:0;
-  height:100vh;
+/*Remove margins, black background and white text*/
+body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
+/*make it fill screen Using flex direction*/
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+/* Hide elements */
+.hidden{display:none!important}
+/*inner size for the input which is ID */
+input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
+/*same as input but for buttons*/
+button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
+/*make timer button circle*/
+#timer{width:70px;height:70px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;font-size:28px}
+
+.answers{width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr}
+
+.ans{width:100%;height:100%;font-size:22px;color:#fff;border:none;transition:transform .08s ease, filter .08s ease}
+/*shrink the button when you press on it*/
+.ans:active{transform:scale(.98)}
+.red{background:#e21b3c}.blue{background:#1368ce}.yellow{background:#d89e00;color:#000}.green{background:#26890c}
+.card{background:#1b1b1b;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.small{opacity:.85;font-size:14px}
+
+/*Animation */
+.flash-green{animation:flashGreen .35s ease 2}
+@keyframes flashGreen { 0%{background:#111} 50%{background:#0c6} 100%{background:#111} }
+
+.flash-red{animation:flashRed .35s ease 2}
+@keyframes flashRed { 0%{background:#111} 50%{background:#e21b3c} 100%{background:#111} }
+/*for differentiate between the right and wrong answers*/
+.correct-btn{filter:brightness(1.15); outline:4px solid rgba(0,255,150,.55)}
+.wrong-btn{filter:grayscale(.25) brightness(.85); outline:4px solid rgba(255,0,0,.35)}
+/*shake when answer*/
+.shake{animation:shake .25s ease 1}
+@keyframes shake{
+  0%{transform:translateX(0)}
+  25%{transform:translateX(-6px)}
+  50%{transform:translateX(6px)}
+  75%{transform:translateX(-4px)}
+  100%{transform:translateX(0)}
+}
+
+/* ✅ Ramadan title bar */
+.ramadan-bar{
   display:flex;
   align-items:center;
   justify-content:center;
-  background:#ffffff;
-  font-family:Arial;
-  color:#333;
+  gap:10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding:10px 14px;
+  border-radius:14px;
+  margin-bottom:12px;
+  backdrop-filter: blur(6px);
+}
+.ramadan-bar .title{
+  font-size:20px;
+  font-weight:700;
+  letter-spacing:.3px;
+}
+.ramadan-bar .icon{
+  font-size:22px;
+}
+
+/* ✅ Login background only */
+#loginScreen{
+  background-image: url("./images/background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+#loginScreen::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,0.55);
+}
+#loginScreen .card{
+  position:relative;
+  z-index:1;
+}
+
+/* ✅ Single BIG logo on one side */
+.bigLogo{
+  position:absolute;
+  top:18px;
+  left:18px;             /* change to right:18px if you want it on the right */
+  width:140px;
+  height:140px;
+  object-fit:contain;
+  opacity:.97;
+  filter: drop-shadow(0 0 6px rgba(0,0,0,0.55));
+  pointer-events:none;
+}
+@media (max-width:480px){
+  .bigLogo{width:100px;height:100px;}
 }
 </style>
 </head>
 
 <body>
-Fazoora is closed.
+
+  <!--for making login screen-->
+<div id="loginScreen" class="screen">
+
+  <!-- ✅ Single BIG Logo -->
+  <img src="images/logo.png" class="bigLogo" alt="University Logo">
+
+  <div class="card">
+    <div class="ramadan-bar">
+      <span class="icon">🌙</span>
+      <span class="title">SMCS Ramadan Fawazeer</span>
+      <span class="icon">🫘🍲</span>
+    </div>
+
+    <!-- ✅ ID only -->
+    <input id="idInput" placeholder="Student ID"/>
+    <button id="startBtn" onclick="startGame()">Start</button>
+
+    <!--for making login message-->
+    <div class="small" id="loginMsg"></div>
+  </div>
+</div>
+
+<!-- QUESTION are hidden until login -->
+<div id="questionScreen" class="screen hidden">
+
+  <!-- ✅ Single BIG Logo -->
+  <img src="images/logo.png" class="bigLogo" alt="University Logo">
+
+  <div style="display:flex;gap:14px;align-items:center">
+    <div id="timer">20</div>
+  </div>
+
+  <h2 id="qText">Loading...</h2>
+
+  <div class="answers">
+    <button class="ans red" onclick="answer(0)"></button>
+    <button class="ans blue" onclick="answer(1)"></button>
+    <button class="ans yellow" onclick="answer(2)"></button>
+    <button class="ans green" onclick="answer(3)"></button>
+  </div>
+</div>
+
+<!-- RESULT are hidden until the question time ends -->
+<div id="resultScreen" class="screen hidden">
+  <div class="card" style="text-align:center;min-width:320px">
+    <h1 id="resultTitle"></h1>
+    <div id="resultDetails"></div>
+    <div class="small" id="sendStatus" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<script>
+  //Google Apps Script URL
+  const APPS_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbzpflfT37j0aWTZzpeUPVlbnu94mdIis1AuyWvHFJ6qv25SscFNutz_-1VVRboYLEKIPw/exec";
+
+  // ✅ OPEN 12:30 and CLOSE 13:30 (Cairo)
+  const OPEN_HOUR = 12, OPEN_MIN = 30;
+  const CLOSE_HOUR = 13, CLOSE_MIN = 30;
+
+  const question = {
+    text: "What is the capital of Egypt?",
+    options: ["Alexandria","Cairo","Giza","Luxor"],
+    correctIndex: 1,
+    timeLimit: 20
+  };
+
+  let userId="";
+  let startTime=0;
+  let timer=null;
+  let answered=false;
+
+  function pad2(n){ return String(n).padStart(2,"0"); }
+
+  function todayKey(){
+    const d = new Date();
+    return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
+  }
+
+  function makeTimeToday(h,m){
+    const d = new Date();
+    d.setHours(h,m,0,0);
+    return d;
+  }
+
+  function isOpenNow(){
+    const now = new Date();
+    const openT = makeTimeToday(OPEN_HOUR, OPEN_MIN);
+    const closeT = makeTimeToday(CLOSE_HOUR, CLOSE_MIN);
+    return now >= openT && now <= closeT;
+  }
+
+  function nextOpenTime(){
+    const now = new Date();
+    const openT = makeTimeToday(OPEN_HOUR, OPEN_MIN);
+    if(now < openT) return openT;
+    const tomorrow = new Date(openT);
+    tomorrow.setDate(tomorrow.getDate()+1);
+    return tomorrow;
+  }
+
+  function formatCountdown(ms){
+    const total = Math.max(0, Math.floor(ms/1000));
+    const h = Math.floor(total/3600);
+    const m = Math.floor((total%3600)/60);
+    const s = total%60;
+    return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+  }
+
+  // ✅ Ramadan countdown + auto open/close
+  function updateAvailability(){
+    const msg = document.getElementById("loginMsg");
+    const startBtn = document.getElementById("startBtn");
+
+    if(isOpenNow()){
+      msg.innerHTML = "";
+      startBtn.disabled = false;
+      startBtn.style.opacity = 1;
+      startBtn.style.cursor = "pointer";
+      return;
+    }
+
+    // closed => show ramadan message + countdown to next open
+    const next = nextOpenTime();
+    const diff = next.getTime() - Date.now();
+
+    msg.innerHTML =
+      "🌙 <b>Stay tuned… the Fazoora will open soon</b> 🌙<br><br>" +
+      "<span style='font-size:28px;font-weight:bold'>" +
+      formatCountdown(diff) +
+      "</span>";
+
+    startBtn.disabled = true;
+    startBtn.style.opacity = 0.55;
+    startBtn.style.cursor = "not-allowed";
+  }
+
+  updateAvailability();
+  setInterval(updateAvailability, 1000);
+
+  //for sounds:
+  const sfx = {
+    login: "sounds/login.mp3",
+    timer: "sounds/timer.mp3",
+    timeup: "sounds/timeup.mp3",
+    points: "sounds/points.mp3",
+    correct: "sounds/correct.mp3",
+    incorrect: "sounds/incorrect.mp3"
+  };
+
+  const audioPool = {};
+  let currentSFX = null;
+
+  function getAudio(src){
+    if(!audioPool[src]){
+      audioPool[src] = new Audio(src);
+      audioPool[src].preload = "auto";
+    }
+    return audioPool[src];
+  }
+
+  function playSound(src, vol=0.7, mode="sfx"){
+    try{
+      if(mode === "sfx" && currentSFX){
+        currentSFX.pause();
+        currentSFX.currentTime = 0;
+      }
+
+      const a = getAudio(src);
+      a.pause();
+      a.currentTime = 0;
+      a.volume = vol;
+
+      a.play().catch(()=>{});
+
+      if(mode === "sfx"){
+        currentSFX = a;
+      }
+    }catch(e){}
+  }
+
+  function stopTimerSound(){
+    const t = getAudio(sfx.timer);
+    t.pause();
+    t.currentTime = 0;
+  }
+
+  document.addEventListener("click", () => {
+    playSound(sfx.login, 0.7, "sfx");
+  }, { once: true });
+
+  function startGame(){
+    // ✅ block start if closed
+    if(!isOpenNow()){
+      updateAvailability();
+      return;
+    }
+
+    userId=document.getElementById("idInput").value.trim();
+
+    const msg=document.getElementById("loginMsg");
+    msg.textContent="";
+
+    if(!userId){
+      msg.textContent="Please enter your ID.";
+      return;
+    }
+
+    // ✅ once per day per ID (same device)
+    const key = "played_" + userId;
+    const last = localStorage.getItem(key);
+    const today = todayKey();
+    if(last === today){
+      msg.textContent = "This ID already played today (not allowed).";
+      return;
+    }
+
+    playSound(sfx.login, 0.7, "sfx");
+    show("questionScreen");
+    loadQuestion();
+  }
+
+  function loadQuestion(){
+    answered=false;
+    document.getElementById("qText").textContent=question.text;
+
+    const btns=document.querySelectorAll(".ans");
+    btns.forEach((b,i)=>{
+      b.textContent=question.options[i];
+      b.disabled=false;
+      b.classList.remove("correct-btn","wrong-btn");
+    });
+
+    startTime=Date.now();
+    startTimer(question.timeLimit);
+  }
+
+  function startTimer(sec){
+    clearInterval(timer);
+    stopTimerSound();
+
+    let t=sec;
+    document.getElementById("timer").textContent=t;
+
+    timer=setInterval(()=>{
+      t--;
+      document.getElementById("timer").textContent=t;
+
+      if(t > 0){
+        playSound(sfx.timer, 0.25, "timer");
+      }
+
+      if(t<=0){
+        clearInterval(timer);
+        lockButtons();
+        stopTimerSound();
+        if(!answered){
+          flash(false);
+          playSound(sfx.timeup, 0.8, "sfx");
+          finish(false,0,sec,true);
+        }
+      }
+    },1000);
+  }
+
+  function lockButtons(){
+    document.querySelectorAll(".ans").forEach(b=>b.disabled=true);
+  }
+
+  function flash(correct){
+    document.body.classList.remove("flash-green","flash-red");
+    void document.body.offsetWidth;
+    document.body.classList.add(correct ? "flash-green" : "flash-red");
+  }
+
+  function answer(choice){
+    if(answered) return;
+    answered=true;
+
+    clearInterval(timer);
+    stopTimerSound();
+    lockButtons();
+
+    const elapsed=(Date.now()-startTime)/1000;
+    const timeTaken=Math.min(question.timeLimit,elapsed);
+
+    const correct=(choice===question.correctIndex);
+    let score=0;
+
+    const btns=document.querySelectorAll(".ans");
+    btns[question.correctIndex].classList.add("correct-btn");
+    if(!correct) btns[choice].classList.add("wrong-btn");
+
+    if(correct){
+      flash(true);
+      playSound(sfx.correct, 0.7, "sfx");
+
+      score=Math.max(0,Math.floor((question.timeLimit-timeTaken)*10));
+
+      if(score > 0){
+        setTimeout(()=>playSound(sfx.points, 0.6, "sfx"), 150);
+      }
+
+      setTimeout(()=>finish(true,score,timeTaken,false), 450);
+    }else{
+      flash(false);
+      playSound(sfx.incorrect, 0.7, "sfx");
+      document.getElementById("questionScreen").classList.add("shake");
+      setTimeout(()=>document.getElementById("questionScreen").classList.remove("shake"), 260);
+      setTimeout(()=>finish(false,0,timeTaken,false), 450);
+    }
+  }
+
+  async function finish(correct,score,timeTaken,timedOut){
+    show("resultScreen");
+
+    document.getElementById("resultTitle").textContent =
+      timedOut ? "Time’s up!" : (correct ? "Correct!" : "Incorrect");
+
+    // ✅ don't show score to student
+    document.getElementById("resultDetails").textContent =
+      `Time: ${timeTaken.toFixed(1)}s`;
+
+    const status=document.getElementById("sendStatus");
+    status.textContent="Saving your result...";
+
+    try{
+      const fd=new FormData();
+      fd.append("id",userId);
+      fd.append("score",String(score));
+      fd.append("time",timeTaken.toFixed(1));
+
+      const res = await fetch(APPS_SCRIPT_URL,{ method:"POST", body:fd });
+      const json = await res.json().catch(()=>({ok:true}));
+
+      if(json && json.ok === false){
+        status.textContent = json.error || "Result was not saved.";
+      }else{
+        status.textContent="Result saved ✅";
+        // ✅ mark played today
+        localStorage.setItem("played_" + userId, todayKey());
+      }
+    }catch(e){
+      console.log(e);
+      status.textContent="Could not save result ❌";
+    }
+  }
+
+  function show(id){
+    ["loginScreen","questionScreen","resultScreen"].forEach(x=>{
+      document.getElementById(x).classList.toggle("hidden",x!==id);
+    });
+  }
+</script>
+
 </body>
 </html>
