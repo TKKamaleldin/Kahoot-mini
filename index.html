@@ -6,35 +6,66 @@
 <title>SMCS Ramadan Fawazeer</title>
 
 <style>
-body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
 
+/* 🎨 BACKGROUND (رجع زي زمان) */
+body{
+  margin:0;
+  font-family:Arial;
+  background:url("images/background.png") center/cover no-repeat fixed;
+  color:#fff;
+  overflow:hidden;
+}
+
+/* full screen layout */
 .screen{
-position:fixed;inset:0;
-display:flex;flex-direction:column;
-align-items:center;justify-content:center;
-gap:12px
+  position:fixed; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:12px;
 }
 
 .hidden{display:none!important}
 
-input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
-button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
-
-#timer{
-width:70px;height:70px;border-radius:50%;
-background:#000;display:flex;align-items:center;
-justify-content:center;font-size:28px
+input{
+  padding:12px;
+  font-size:18px;
+  width:280px;
+  border-radius:10px;
+  border:none;
 }
 
+button{
+  padding:12px 24px;
+  font-size:18px;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+}
+
+/* timer circle */
+#timer{
+  width:70px;
+  height:70px;
+  border-radius:50%;
+  background:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:28px;
+}
+
+/* answers layout */
 .answers{
-width:100%;
-height:55vh;
-display:grid;
-grid-template-columns:1fr 1fr
+  width:100%;
+  height:55vh;
+  display:grid;
+  grid-template-columns:1fr 1fr;
 }
 
 .ans{
-font-size:22px;color:#fff;border:none
+  font-size:22px;
+  color:#fff;
+  border:none;
 }
 
 .red{background:#e21b3c}
@@ -42,18 +73,20 @@ font-size:22px;color:#fff;border:none
 .yellow{background:#d89e00;color:#000}
 .green{background:#26890c}
 
+/* card */
 .card{
-background:#1b1b1b;
-padding:20px;
-border-radius:16px;
-box-shadow:0 10px 30px rgba(0,0,0,.35)
+  background:#1b1b1b;
+  padding:20px;
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
 }
 
-/* logo center */
+/* logo */
 .logo{
-width:140px;
-margin-bottom:10px;
+  width:140px;
+  margin-bottom:10px;
 }
+
 </style>
 </head>
 
@@ -66,7 +99,6 @@ margin-bottom:10px;
   <div class="card">
     <h1>SMCS Ramadan Fawazeer</h1>
 
-    <!-- ID فقط -->
     <input id="idInput" placeholder="Student ID"/>
     <button onclick="startGame()">Start</button>
 
@@ -99,9 +131,28 @@ margin-bottom:10px;
 </div>
 
 <script>
+
+/* 🎧 SOUNDS */
+const sfx = {
+  login: new Audio("sounds/login.mp3"),
+  timer: new Audio("sounds/timer.mp3"),
+  correct: new Audio("sounds/correct.mp3"),
+  incorrect: new Audio("sounds/incorrect.mp3"),
+  timeup: new Audio("sounds/timeup.mp3")
+};
+
+function playSound(a){
+  try{
+    a.currentTime = 0;
+    a.play().catch(()=>{});
+  }catch{}
+}
+
+/* Google Script */
 const APPS_SCRIPT_URL =
 "https://script.google.com/macros/s/AKfycbzpflfT37j0aWTZzpeUPVlbnu94mdIis1AuyWvHFJ6qv25SscFNutz_-1VVRboYLEKIPw/exec";
 
+/* QUESTION */
 const question={
 text:"In a time before laptops and late-night debugging… there was a man who is considered the father of theoretical computer science. Who was he?",
 options:["Alan Turing","Charles Babbage","John von Neumann","Steve Jobs"],
@@ -114,83 +165,96 @@ let startTime=0;
 let timer=null;
 let answered=false;
 
+/* START GAME */
 function startGame(){
-userId=document.getElementById("idInput").value.trim();
+  userId=document.getElementById("idInput").value.trim();
 
-if(!userId){
-document.getElementById("loginMsg").textContent="Enter ID";
-return;
+  if(!userId){
+    document.getElementById("loginMsg").textContent="Enter ID";
+    return;
+  }
+
+  playSound(sfx.login);
+
+  show("questionScreen");
+  loadQuestion();
 }
 
-show("questionScreen");
-loadQuestion();
-}
-
+/* LOAD QUESTION */
 function loadQuestion(){
-answered=false;
-document.getElementById("qText").textContent=question.text;
+  answered=false;
+  document.getElementById("qText").textContent=question.text;
 
-const btns=document.querySelectorAll(".ans");
-btns.forEach((b,i)=>b.textContent=question.options[i]);
+  const btns=document.querySelectorAll(".ans");
+  btns.forEach((b,i)=>b.textContent=question.options[i]);
 
-startTime=Date.now();
-startTimer(question.timeLimit);
+  startTime=Date.now();
+  startTimer(question.timeLimit);
 }
 
+/* TIMER */
 function startTimer(sec){
-let t=sec;
-document.getElementById("timer").textContent=t;
+  let t=sec;
+  document.getElementById("timer").textContent=t;
 
-timer=setInterval(()=>{
-t--;
-document.getElementById("timer").textContent=t;
+  timer=setInterval(()=>{
+    t--;
+    document.getElementById("timer").textContent=t;
+    playSound(sfx.timer);
 
-if(t<=0){
-clearInterval(timer);
-finish(false,0,true);
+    if(t<=0){
+      clearInterval(timer);
+      playSound(sfx.timeup);
+      finish(false,0,true,question.timeLimit);
+    }
+  },1000);
 }
-},1000);
-}
 
+/* ANSWER */
 function answer(choice){
-if(answered) return;
-answered=true;
-clearInterval(timer);
+  if(answered) return;
+  answered=true;
+  clearInterval(timer);
 
-const elapsed=(Date.now()-startTime)/1000;
-const correct=choice===question.correctIndex;
-let score=Math.max(0,Math.floor((question.timeLimit-elapsed)*10));
+  const elapsed=(Date.now()-startTime)/1000;
+  const correct=choice===question.correctIndex;
+  let score=Math.max(0,Math.floor((question.timeLimit-elapsed)*10));
 
-finish(correct,score,false);
+  if(correct) playSound(sfx.correct);
+  else playSound(sfx.incorrect);
+
+  finish(correct,score,false,elapsed);
 }
 
-async function finish(correct,score,timedOut){
-show("resultScreen");
+/* FINISH */
+async function finish(correct,score,timedOut,timeTaken){
+  show("resultScreen");
 
-document.getElementById("resultTitle").textContent=
-timedOut?"Time's up!":correct?"Correct!":"Incorrect";
+  document.getElementById("resultTitle").textContent=
+  timedOut?"Time's up!":correct?"Correct!":"Incorrect";
 
-const status=document.getElementById("sendStatus");
-status.textContent="Saving...";
+  const status=document.getElementById("sendStatus");
+  status.textContent="Saving...";
 
-try{
-const fd=new FormData();
-fd.append("id",userId);
-fd.append("time","15");
-fd.append("score",score);
+  try{
+    const fd=new FormData();
+    fd.append("id",userId);
+    fd.append("time",timeTaken.toFixed(1));
+    fd.append("score",score);
 
-await fetch(APPS_SCRIPT_URL,{method:"POST",body:fd});
+    await fetch(APPS_SCRIPT_URL,{method:"POST",body:fd});
 
-status.textContent="Result saved ✅";
-}catch{
-status.textContent="Error saving result";
+    status.textContent="Result saved ✅";
+  }catch{
+    status.textContent="Error saving result";
+  }
 }
-}
 
+/* SHOW SCREEN */
 function show(id){
-["loginScreen","questionScreen","resultScreen"].forEach(x=>{
-document.getElementById(x).classList.toggle("hidden",x!==id);
-});
+  ["loginScreen","questionScreen","resultScreen"].forEach(x=>{
+    document.getElementById(x).classList.toggle("hidden",x!==id);
+  });
 }
 </script>
 </body>
