@@ -6,76 +6,35 @@
 <title>SMCS Ramadan Fawazeer</title>
 
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#789D4A;
-  color:#fff;
-  overflow:hidden;
-}
+body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
 
 .screen{
-  position:fixed; inset:0;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  gap:12px;
-  padding:18px;
+position:fixed;inset:0;
+display:flex;flex-direction:column;
+align-items:center;justify-content:center;
+gap:12px
 }
+
 .hidden{display:none!important}
 
-.logo-center{
-  width:260px;
-  margin-bottom:6px;
-}
-
-.card{
-  background:rgba(0,0,0,.25);
-  padding:18px;
-  border-radius:16px;
-  text-align:center;
-}
-
-.small{font-size:14px}
-
-input{
-  padding:12px;
-  font-size:18px;
-  width:260px;
-  border-radius:10px;
-  border:none;
-}
-
-button{
-  padding:12px 24px;
-  font-size:18px;
-  border:none;
-  border-radius:12px;
-  cursor:pointer;
-}
+input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
+button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
 
 #timer{
-  width:60px;height:60px;
-  border-radius:50%;
-  background:rgba(0,0,0,.4);
-  display:flex;align-items:center;justify-content:center;
-  font-size:24px;
+width:70px;height:70px;border-radius:50%;
+background:#000;display:flex;align-items:center;
+justify-content:center;font-size:28px
 }
 
 .answers{
-  width:90vw;
-  max-width:600px;
-  height:38vh;
-  display:grid;
-  gap:10px;
-  grid-template-columns:1fr 1fr;
+width:100%;
+height:55vh;
+display:grid;
+grid-template-columns:1fr 1fr
 }
 
 .ans{
-  font-size:26px;
-  font-weight:bold;
-  border:none;
-  border-radius:14px;
-  color:white;
+font-size:22px;color:#fff;border:none
 }
 
 .red{background:#e21b3c}
@@ -83,6 +42,18 @@ button{
 .yellow{background:#d89e00;color:#000}
 .green{background:#26890c}
 
+.card{
+background:#1b1b1b;
+padding:20px;
+border-radius:16px;
+box-shadow:0 10px 30px rgba(0,0,0,.35)
+}
+
+/* logo center */
+.logo{
+width:140px;
+margin-bottom:10px;
+}
 </style>
 </head>
 
@@ -90,27 +61,24 @@ button{
 
 <!-- LOGIN -->
 <div id="loginScreen" class="screen">
-  <img src="images/logo.png" class="logo-center">
+  <img src="images/logo.png" class="logo">
 
   <div class="card">
-    <h2>SMCS Ramadan Fawazeer</h2>
+    <h1>SMCS Ramadan Fawazeer</h1>
 
-    <div id="openStatus" class="small"></div>
-
+    <!-- ID فقط -->
     <input id="idInput" placeholder="Student ID"/>
-    <br><br>
-    <button id="startBtn" onclick="startGame()">Start</button>
-    <div id="loginMsg" class="small"></div>
+    <button onclick="startGame()">Start</button>
+
+    <div id="loginMsg"></div>
   </div>
 </div>
 
 <!-- QUESTION -->
 <div id="questionScreen" class="screen hidden">
-  <img src="images/logo.png" class="logo-center">
+  <img src="images/logo.png" class="logo">
 
-  <div style="display:flex;gap:10px;align-items:center">
-    <div id="timer">15</div>
-  </div>
+  <div id="timer">15</div>
 
   <h2 id="qText"></h2>
 
@@ -125,8 +93,7 @@ button{
 <!-- RESULT -->
 <div id="resultScreen" class="screen hidden">
   <div class="card">
-    <h2 id="resultTitle"></h2>
-    <div id="resultDetails"></div>
+    <h1 id="resultTitle"></h1>
     <div id="sendStatus"></div>
   </div>
 </div>
@@ -135,130 +102,95 @@ button{
 const APPS_SCRIPT_URL =
 "https://script.google.com/macros/s/AKfycbzpflfT37j0aWTZzpeUPVlbnu94mdIis1AuyWvHFJ6qv25SscFNutz_-1VVRboYLEKIPw/exec";
 
-// open time
-const START_HOUR=11, START_MIN=15;
-const END_HOUR=11, END_MIN=45;
-
-function updateOpenStatus(){
-  const now=new Date();
-  const start=new Date();
-  start.setHours(START_HOUR,START_MIN,0);
-  const end=new Date();
-  end.setHours(END_HOUR,END_MIN,0);
-
-  const status=document.getElementById("openStatus");
-  const btn=document.getElementById("startBtn");
-
-  if(now<start){
-    status.textContent="Quiz opens at 11:15";
-    btn.disabled=true;
-  }else if(now>end){
-    status.textContent="Closed for today";
-    btn.disabled=true;
-  }else{
-    status.textContent="Quiz is open now";
-    btn.disabled=false;
-  }
-}
-setInterval(updateOpenStatus,1000);
-
 const question={
- text:"In a time before laptops and late-night debugging… there was a man who is considered the father of theoretical computer science. Who was he?",
- options:["Alan Turing","Charles Babbage","John von Neumann","Steve Jobs"],
- correctIndex:0,
- timeLimit:15
+text:"In a time before laptops and late-night debugging… there was a man who is considered the father of theoretical computer science. Who was he?",
+options:["Alan Turing","Charles Babbage","John von Neumann","Steve Jobs"],
+correctIndex:0,
+timeLimit:15
 };
 
 let userId="";
-let timer;
-let startTime;
+let startTime=0;
+let timer=null;
 let answered=false;
 
 function startGame(){
- userId=document.getElementById("idInput").value.trim();
- if(!userId){
-  document.getElementById("loginMsg").textContent="Enter ID";
-  return;
- }
+userId=document.getElementById("idInput").value.trim();
 
- const today=new Date().toDateString();
- if(localStorage.getItem(userId+today)){
-  document.getElementById("loginMsg").textContent="You already played today";
-  return;
- }
+if(!userId){
+document.getElementById("loginMsg").textContent="Enter ID";
+return;
+}
 
- show("questionScreen");
- loadQuestion();
+show("questionScreen");
+loadQuestion();
 }
 
 function loadQuestion(){
- answered=false;
- document.getElementById("qText").textContent=question.text;
+answered=false;
+document.getElementById("qText").textContent=question.text;
 
- const btns=document.querySelectorAll(".ans");
- btns.forEach((b,i)=>b.textContent=question.options[i]);
+const btns=document.querySelectorAll(".ans");
+btns.forEach((b,i)=>b.textContent=question.options[i]);
 
- startTime=Date.now();
- startTimer(question.timeLimit);
+startTime=Date.now();
+startTimer(question.timeLimit);
 }
 
 function startTimer(sec){
- let t=sec;
- document.getElementById("timer").textContent=t;
- timer=setInterval(()=>{
-  t--;
-  document.getElementById("timer").textContent=t;
-  if(t<=0){
-   clearInterval(timer);
-   finish(false,0,true);
-  }
- },1000);
+let t=sec;
+document.getElementById("timer").textContent=t;
+
+timer=setInterval(()=>{
+t--;
+document.getElementById("timer").textContent=t;
+
+if(t<=0){
+clearInterval(timer);
+finish(false,0,true);
+}
+},1000);
 }
 
 function answer(choice){
- if(answered) return;
- answered=true;
- clearInterval(timer);
+if(answered) return;
+answered=true;
+clearInterval(timer);
 
- const elapsed=(Date.now()-startTime)/1000;
- const correct=choice===question.correctIndex;
- let score=Math.max(0,Math.floor((question.timeLimit-elapsed)*10));
+const elapsed=(Date.now()-startTime)/1000;
+const correct=choice===question.correctIndex;
+let score=Math.max(0,Math.floor((question.timeLimit-elapsed)*10));
 
- finish(correct,score,false);
+finish(correct,score,false);
 }
 
 async function finish(correct,score,timedOut){
- show("resultScreen");
+show("resultScreen");
 
- document.getElementById("resultTitle").textContent=
- timedOut?"Time's up!":correct?"Correct!":"Incorrect";
+document.getElementById("resultTitle").textContent=
+timedOut?"Time's up!":correct?"Correct!":"Incorrect";
 
- document.getElementById("resultDetails").textContent="Time recorded";
+const status=document.getElementById("sendStatus");
+status.textContent="Saving...";
 
- const status=document.getElementById("sendStatus");
- status.textContent="Saving...";
+try{
+const fd=new FormData();
+fd.append("id",userId);
+fd.append("time","15");
+fd.append("score",score);
 
- try{
-  const fd=new FormData();
-  fd.append("id",userId);
-  fd.append("time","15");
-  fd.append("score",score);
+await fetch(APPS_SCRIPT_URL,{method:"POST",body:fd});
 
-  await fetch(APPS_SCRIPT_URL,{method:"POST",body:fd});
-  status.textContent="Result saved ✅";
-
-  const today=new Date().toDateString();
-  localStorage.setItem(userId+today,"played");
-
- }catch{
-  status.textContent="Error saving result";
- }
+status.textContent="Result saved ✅";
+}catch{
+status.textContent="Error saving result";
+}
 }
 
 function show(id){
- ["loginScreen","questionScreen","resultScreen"].forEach(s=>{
-  document.getElementById(s).classList.toggle("hidden",s!==id);
- });
+["loginScreen","questionScreen","resultScreen"].forEach(x=>{
+document.getElementById(x).classList.toggle("hidden",x!==id);
+});
 }
 </script>
 </body>
