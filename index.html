@@ -14,7 +14,7 @@ body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
 /* Hide elements */
 .hidden{display:none!important}
-/*inner size for the input which is ID */
+/*inner size for the input which is ID and name  */
 input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
 /*same as input but for buttons*/
 button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
@@ -109,7 +109,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
 <body>
 
-  <!--for making login screen-->
+<!-- LOGIN -->
 <div id="loginScreen" class="screen">
 
   <!-- ✅ Single BIG Logo -->
@@ -122,19 +122,23 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       <span class="icon">🫘🍲</span>
     </div>
 
-    <!-- ✅ ID only -->
-    <input id="idInput" placeholder="Student ID"/>
+    <!-- ✅ Name back -->
+    <input id="nameInput" placeholder="Name"/>
+
+    <!-- ✅ ID digits only -->
+    <input id="idInput" placeholder="Student ID"
+           inputmode="numeric" pattern="[0-9]*" maxlength="20"
+           oninput="this.value=this.value.replace(/[^0-9]/g,'');"/>
+
     <button id="startBtn" onclick="startGame()">Start</button>
 
-    <!--for making login message-->
     <div class="small" id="loginMsg"></div>
   </div>
 </div>
 
-<!-- QUESTION are hidden until login -->
+<!-- QUESTION -->
 <div id="questionScreen" class="screen hidden">
 
-  <!-- ✅ Single BIG Logo -->
   <img src="images/logo.png" class="bigLogo" alt="University Logo">
 
   <div style="display:flex;gap:14px;align-items:center">
@@ -151,7 +155,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   </div>
 </div>
 
-<!-- RESULT are hidden until the question time ends -->
+<!-- RESULT -->
 <div id="resultScreen" class="screen hidden">
   <div class="card" style="text-align:center;min-width:320px">
     <h1 id="resultTitle"></h1>
@@ -161,22 +165,23 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 </div>
 
 <script>
-  //Google Apps Script URL
+  //Google Apps Script URL (PUT YOUR WEB APP URL HERE)
   const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzLSEaLTsWLL2V2blXF3jAzl4nsGT_MsF6k4Y19RqgNYSoQQ5psxNPnGRIFThuFeDvcNQ/exec";
+  "https://script.google.com/macros/s/AKfycbw5mw3W7ESjC0e5T-VR9pD6BuHZg93WdnGpGXrH9sXd_EgV1C5o4esAdPxGde7lZCaHOQ/exec";
 
   // ✅ OPEN 12:30 and CLOSE 13:30 (Cairo)
-  const OPEN_HOUR = 11, OPEN_MIN = 15;
-  const CLOSE_HOUR = 11, CLOSE_MIN = 45;
+  const OPEN_HOUR = 20, OPEN_MIN = 40;
+  const CLOSE_HOUR = 20, CLOSE_MIN = 50;
 
+  // ✅ Question
   const question = {
-    text: "A master architect drew a plan… a blueprint every modern machine still follows. Whose architecture is it?”",
-    options: ["John von NeumSann","Ada Lovelace"," Grace Hopper","Ken Thompson"],
+    text: "In a time before laptops and late-night debugging…\nthere was a man who is considered the father of theoretical computer science.\nWho was he?",
+    options: ["Alan Turing","Charles Babbage","John von Neumann","Steve Jobs"],
     correctIndex: 0,
     timeLimit: 15
   };
 
-  let userId="";
+  let userId="", name="";
   let startTime=0;
   let timer=null;
   let answered=false;
@@ -231,7 +236,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       return;
     }
 
-    // closed => show ramadan message + countdown to next open
     const next = nextOpenTime();
     const diff = next.getTime() - Date.now();
 
@@ -301,27 +305,29 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   }, { once: true });
 
   function startGame(){
-    // ✅ block start if closed
     if(!isOpenNow()){
       updateAvailability();
       return;
     }
 
-    userId=document.getElementById("idInput").value.trim();
+    name = document.getElementById("nameInput").value.trim();
+    userId = document.getElementById("idInput").value.trim();
+
+    userId = userId.replace(/[^0-9]/g,"");
+    document.getElementById("idInput").value = userId;
 
     const msg=document.getElementById("loginMsg");
     msg.textContent="";
 
-    if(!userId){
-      msg.textContent="Please enter your ID.";
+    if(!name || !userId){
+      msg.textContent="Please enter your name and ID (digits only).";
       return;
     }
 
     // ✅ once per day per ID (same device)
     const key = "played_" + userId;
-    const last = localStorage.getItem(key);
     const today = todayKey();
-    if(last === today){
+    if(localStorage.getItem(key) === today){
       msg.textContent = "This ID already played today (not allowed).";
       return;
     }
@@ -438,6 +444,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     try{
       const fd=new FormData();
       fd.append("id",userId);
+      fd.append("name",name);
       fd.append("score",String(score));
       fd.append("time",timeTaken.toFixed(1));
 
