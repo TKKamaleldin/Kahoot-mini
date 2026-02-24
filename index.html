@@ -115,18 +115,23 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 </div>
 
 <script>
+  // ✅ Your Google Apps Script Web App URL
   const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbxZlzQ0yqsLCJUhj1p-5kstwSys4-qa32TQEkmueUPncD_X8KYT4y4mEqnDsBfN5SXZjg/exec";  
-  // time window also checked on server, but we show countdown here
-  const OPEN_HOUR=8, OPEN_MIN=41;
-  const CLOSE_HOUR=8, CLOSE_MIN=45;
+  "https://script.google.com/macros/s/AKfycbxZlzQ0yqsLCJUhj1p-5kstwSys4-qa32TQEkmueUPncD_X8KYT4y4mEqnDsBfN5SXZjg/exec";
 
+  // ✅ Open/Close window (local countdown)
+  const OPEN_HOUR=9, OPEN_MIN=6;
+  const CLOSE_HOUR=9, CLOSE_MIN=20;
+
+  // ✅ State
   let question=null;
+  let cachedQuestion=null, cacheTime=0; // ✅ preload/cache
   let userId="", name="";
   let startTime=0;
   let timer=null;
   let answered=false;
 
+  // ✅ Sounds
   const sfx = {
     login:"sounds/login.mp3",
     timer:"sounds/timer.mp3",
@@ -151,8 +156,10 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   }
   function stopTimerSound(){ const t=getAudio(sfx.timer); t.pause(); t.currentTime=0; }
 
+  // allow audio after first click
   document.addEventListener("click",()=>{ playSound(sfx.login,0.7,"sfx"); },{once:true});
 
+  // ✅ Time helpers
   function pad2(n){ return String(n).padStart(2,"0"); }
   function todayKey(){ const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
   function makeTimeToday(h,m){ const d=new Date(); d.setHours(h,m,0,0); return d; }
@@ -173,6 +180,8 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     const h=Math.floor(total/3600), m=Math.floor((total%3600)/60), s=total%60;
     return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
   }
+
+  // ✅ UI availability + countdown
   function updateAvailability(){
     const msg=document.getElementById("loginMsg");
     const btn=document.getElementById("startBtn");
@@ -193,17 +202,36 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
   // ✅ fetch question from server (so not visible in GitHub)
   async function fetchQuestion(){
+    // ✅ cache for 30 seconds (reduces start delay)
+    if(cachedQuestion && (Date.now()-cacheTime) < 30000){
+      return cachedQuestion;
+    }
+
     const res = await fetch(APPS_SCRIPT_URL,{method:"GET"});
     const json = await res.json();
     if(!json || json.ok !== true) throw new Error("Bad response");
     if(!json.isOpen) throw new Error("Closed");
-    return json.question;
+
+    cachedQuestion = json.question;
+    cacheTime = Date.now();
+    return cachedQuestion;
   }
 
+  // ✅ preload in background while open
+  setInterval(()=>{
+    if(isOpenNow()){
+      fetchQuestion().catch(()=>{});
+    }
+  }, 5000);
+
+  // ✅ Start (with loading + timeout to avoid "stuck")
   async function startGame(){
     const msg=document.getElementById("loginMsg");
+    const btn=document.getElementById("startBtn");
+
     msg.textContent="";
 
+    // validate input
     name=document.getElementById("nameInput").value.trim();
     userId=document.getElementById("idInput").value.trim();
     userId=userId.replace(/[^0-9]/g,"").slice(0,9);
@@ -224,17 +252,40 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       return;
     }
 
-    try{
-      question = await fetchQuestion(); // ✅ get question now
-    }catch(e){
-      updateAvailability();
-      msg.textContent="Not open yet. Please wait for the countdown.";
-      return;
-    }
+    // loading state
+    const oldText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Loading…";
+    btn.style.opacity = .7;
 
-    playSound(sfx.login,0.7,"sfx");
-    show("questionScreen");
-    loadQuestion();
+    try{
+      msg.textContent="Loading question…";
+
+      // timeout so it won't feel stuck
+      const timeoutMs = 6000;
+      const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), timeoutMs));
+
+      question = await Promise.race([ fetchQuestion(), timeoutPromise ]);
+
+      playSound(sfx.login,0.7,"sfx");
+      show("questionScreen");
+      loadQuestion();
+
+    }catch(e){
+      if(String(e.message)==="timeout"){
+        msg.textContent="Network is slow… please try again.";
+      }else{
+        updateAvailability();
+        msg.textContent="Not open yet. Please wait for the countdown.";
+      }
+    }finally{
+      // if still on login screen, unlock button
+      if(!document.getElementById("loginScreen").classList.contains("hidden")){
+        btn.disabled = false;
+        btn.textContent = oldText;
+        btn.style.opacity = 1;
+      }
+    }
   }
 
   function loadQuestion(){
