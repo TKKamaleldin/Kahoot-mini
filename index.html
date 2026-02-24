@@ -115,23 +115,23 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 </div>
 
 <script>
-  // ✅ Your Google Apps Script Web App URL
+  //  Your Google Apps Script Web App URL
   const APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbxBtPmtsC6UXgEixooPh1s4EEdNfmux-IVx4V0k5ZnwJGiCyaieO5ROXz5TMyuW1WijEA/exec";
 
-  // ✅ Open/Close window (local countdown)
+  //  Open/Close window (local countdown)
   const OPEN_HOUR=11, OPEN_MIN=15;
   const CLOSE_HOUR=11, CLOSE_MIN=45;
 
-  // ✅ State
+  //  State
   let question=null;
-  let cachedQuestion=null, cacheTime=0; // ✅ preload/cache
+  let cachedQuestion=null, cacheTime=0; //  preload/cache
   let userId="", name="";
   let startTime=0;
   let timer=null;
   let answered=false;
 
-  // ✅ Sounds
+  //  Sounds
   const sfx = {
     login:"sounds/login.mp3",
     timer:"sounds/timer.mp3",
@@ -159,7 +159,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   // allow audio after first click
   document.addEventListener("click",()=>{ playSound(sfx.login,0.7,"sfx"); },{once:true});
 
-  // ✅ Time helpers
+  //  Time helpers
   function pad2(n){ return String(n).padStart(2,"0"); }
   function todayKey(){ const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
   function makeTimeToday(h,m){ const d=new Date(); d.setHours(h,m,0,0); return d; }
@@ -181,7 +181,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
   }
 
-  // ✅ UI availability + countdown
+  //  UI availability + countdown
   function updateAvailability(){
     const msg=document.getElementById("loginMsg");
     const btn=document.getElementById("startBtn");
@@ -200,9 +200,9 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   updateAvailability();
   setInterval(updateAvailability,1000);
 
-  // ✅ fetch question from server (so not visible in GitHub)
+  //  fetch question from server (so not visible in GitHub)
   async function fetchQuestion(){
-    // ✅ cache for 30 seconds (reduces start delay)
+    //  cache for 30 seconds (reduces start delay)
     if(cachedQuestion && (Date.now()-cacheTime) < 30000){
       return cachedQuestion;
     }
@@ -217,14 +217,14 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     return cachedQuestion;
   }
 
-  // ✅ preload in background while open
+  //  preload in background while open
   setInterval(()=>{
     if(isOpenNow()){
       fetchQuestion().catch(()=>{});
     }
   }, 5000);
 
-  // ✅ Start (with loading + timeout to avoid "stuck")
+  //  Start (with loading + timeout to avoid "stuck")
   async function startGame(){
     const msg=document.getElementById("loginMsg");
     const btn=document.getElementById("startBtn");
@@ -369,7 +369,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     document.getElementById("resultTitle").textContent =
       timedOut ? "Time’s up!" : (correct ? "Correct!" : "Incorrect");
 
-    // ✅ no score shown to student
+    //  no score shown to student
     document.getElementById("resultDetails").textContent = `Time: ${timeTaken.toFixed(1)}s`;
 
     const status=document.getElementById("sendStatus");
