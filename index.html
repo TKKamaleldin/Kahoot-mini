@@ -117,19 +117,19 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
 <script>
   const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbyRf9DLqXuQA__vt6y6beuKHcxaCAr3nixYgPzYUeEmr-S2B-GcBjk-Z9FG3BFcHFbrPw/exec";
+  "https://script.google.com/macros/s/AKfycbyqAoZvd7SveEVdGtNgbCPNiGIcTvdsyBR86sC9bjBWsQrSwSYH5P5mXSPnqrI0ddv_Gw/exec";
 
-  // ✅ غيري المواعيد من هنا (على نفس التوقيت GMT+2)
-  const OPEN_HOUR=5, OPEN_MIN=33;
-  const CLOSE_HOUR=5, CLOSE_MIN=50;
+  // 
+  const OPEN_HOUR=11, OPEN_MIN=15;
+  const CLOSE_HOUR=11, CLOSE_MIN=45;
 
   let question=null;
-  let cachedQuestion=null;          // ✅ (جديد) نخزن السؤال لو اتجاب بدري
+  let cachedQuestion=null;          // 
   let userId="", name="";
   let startTime=0;
   let timer=null;
   let answered=false;
-  let finished=false;               // ✅ (جديد) يمنع finish مرتين
+  let finished=false;               //
 
   const sfx = {
     login:"sounds/login.mp3",
@@ -225,7 +225,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   updateAvailability();
   setInterval(updateAvailability,1000);
 
-  // ✅ (جديد) نحاول نجيب السؤال بدري أول ما الصفحة تفتح لو الوقت مفتوح
+
   (async function prefetchIfOpen(){
     if(!isOpenNow()) return;
     try{
@@ -253,7 +253,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     if(!name){ msg.textContent="Please enter your name."; return; }
     if(!/^202\d{6}$/.test(userId)){ msg.textContent="ID must be 9 digits and start with 202."; return; }
 
-    // ✅ local (extra) — بس الحماية الأساسية على السيرفر
     const key="played_"+userId;
     if(localStorage.getItem(key)===todayKey()){
       msg.textContent="This ID already played today (not allowed).";
@@ -265,15 +264,14 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       return;
     }
 
-    // ✅ (جديد) UI loading عشان مايبقاش شكله “معلق”
     btn.disabled=true;
     btn.textContent="Loading...";
     btn.style.opacity=.7;
     btn.style.cursor="wait";
 
     try{
-      question = cachedQuestion || await fetchQuestion();   // ✅ (جديد) استخدم الكاش لو موجود
-      cachedQuestion = question;                            // ✅ (جديد)
+      question = cachedQuestion || await fetchQuestion();   
+      cachedQuestion = question;                            
     }catch(e){
       updateAvailability();
       msg.textContent="Could not load the question right now.";
@@ -285,13 +283,13 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     show("questionScreen");
     loadQuestion();
 
-    // رجّع زر start لو رجعتي للشاشة تاني
+   
     btn.disabled=false; btn.textContent="Start"; btn.style.opacity=1; btn.style.cursor="pointer";
   }
 
   function loadQuestion(){
     answered=false;
-    finished=false;                 // ✅ (جديد)
+    finished=false;                 
     document.getElementById("scoreBox").textContent="Score: 0";
     document.getElementById("qText").textContent=question.text;
 
@@ -326,9 +324,9 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
         lockButtons();
         stopTimerSound();
 
-        // ✅ (جديد) امنعي race condition
+   
         if(!answered && !finished){
-          answered=true;            // ✅ (جديد) عشان مايدخلش answer بعدها
+          answered=true;            
           flash(false);
           playSound(sfx.timeup,0.8,"sfx");
           finish(false,0,sec,true);
@@ -348,7 +346,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   }
 
   function answer(choice){
-    if(answered || finished) return;   // ✅ (جديد)
+    if(answered || finished) return;  
     answered=true;
 
     clearInterval(timer);
@@ -382,8 +380,8 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   }
 
   async function finish(correct,score,timeTaken,timedOut){
-    if(finished) return;            // ✅ (جديد) يمنع تكرار الريزلت
-    finished=true;                  // ✅ (جديد)
+    if(finished) return;            
+    finished=true;                  
 
     show("resultScreen");
 
