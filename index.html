@@ -80,6 +80,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     </div>
 
     <input id="nameInput" placeholder="Name"/>
+
     <input id="idInput" placeholder="Student ID (202xxxxxx)"
            inputmode="numeric" maxlength="9"
            oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9);"/>
@@ -115,23 +116,22 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 </div>
 
 <script>
-  //  Your Google Apps Script Web App URL
+  // ✅ حطي هنا لينك الـ Web App بتاعك (/exec)
   const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzzNLG2Nlvl95hl6vM3NMEOYXFa1PHJea9VcQPrOdGy7RGCfsogh2IWkHKt_pfkPJhMQQ/exec";
+  "https://script.google.com/macros/s/AKfycbwAesncMYii2cJFjTPPgwVxQFio2I5IFCM5JCYU8IE9g5hGp9kTgJMkx-Hx4E0T-wOY9g/exec";
 
-  //  Open/Close window (local countdown)
-  const OPEN_HOUR=11, OPEN_MIN=15;
-  const CLOSE_HOUR=11, CLOSE_MIN=45;
+  // ✅ نفس وقت السيرفر (لـ countdown فقط)
+  // فتح 09:20 - قفل 09:30
+  const OPEN_HOUR=4, OPEN_MIN=32;
+  const CLOSE_HOUR=4, CLOSE_MIN=40;
 
-  //  State
   let question=null;
-  let cachedQuestion=null, cacheTime=0; //  preload/cache
+  let cachedQuestion=null, cacheTime=0;
   let userId="", name="";
   let startTime=0;
   let timer=null;
   let answered=false;
 
-  //  Sounds
   const sfx = {
     login:"sounds/login.mp3",
     timer:"sounds/timer.mp3",
@@ -143,6 +143,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
   const audioPool = {};
   let currentSFX=null;
+
   function getAudio(src){
     if(!audioPool[src]){ audioPool[src]=new Audio(src); audioPool[src].preload="auto"; }
     return audioPool[src];
@@ -156,32 +157,32 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   }
   function stopTimerSound(){ const t=getAudio(sfx.timer); t.pause(); t.currentTime=0; }
 
-  // allow audio after first click
   document.addEventListener("click",()=>{ playSound(sfx.login,0.7,"sfx"); },{once:true});
 
-  //  Time helpers
   function pad2(n){ return String(n).padStart(2,"0"); }
   function todayKey(){ const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
   function makeTimeToday(h,m){ const d=new Date(); d.setHours(h,m,0,0); return d; }
+
   function isOpenNow(){
     const now=new Date();
     const openT=makeTimeToday(OPEN_HOUR,OPEN_MIN);
     const closeT=makeTimeToday(CLOSE_HOUR,CLOSE_MIN);
     return now>=openT && now<=closeT;
   }
+
   function nextOpenTime(){
     const now=new Date();
     const openT=makeTimeToday(OPEN_HOUR,OPEN_MIN);
     if(now<openT) return openT;
     const t=new Date(openT); t.setDate(t.getDate()+1); return t;
   }
+
   function formatCountdown(ms){
     const total=Math.max(0,Math.floor(ms/1000));
     const h=Math.floor(total/3600), m=Math.floor((total%3600)/60), s=total%60;
     return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
   }
 
-  //  UI availability + countdown
   function updateAvailability(){
     const msg=document.getElementById("loginMsg");
     const btn=document.getElementById("startBtn");
@@ -200,38 +201,34 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   updateAvailability();
   setInterval(updateAvailability,1000);
 
-  //  fetch question from server (so not visible in GitHub)
   async function fetchQuestion(){
-    //  cache for 30 seconds (reduces start delay)
     if(cachedQuestion && (Date.now()-cacheTime) < 30000){
       return cachedQuestion;
     }
-
     const res = await fetch(APPS_SCRIPT_URL,{method:"GET"});
     const json = await res.json();
+
     if(!json || json.ok !== true) throw new Error("Bad response");
-    if(!json.isOpen) throw new Error("Closed");
+    if(!json.isOpen || !json.question) throw new Error("Closed");
 
     cachedQuestion = json.question;
     cacheTime = Date.now();
     return cachedQuestion;
   }
 
-  //  preload in background while open
+  // ✅ preload in background while open
   setInterval(()=>{
     if(isOpenNow()){
       fetchQuestion().catch(()=>{});
     }
   }, 5000);
 
-  //  Start (with loading + timeout to avoid "stuck")
   async function startGame(){
     const msg=document.getElementById("loginMsg");
     const btn=document.getElementById("startBtn");
 
     msg.textContent="";
 
-    // validate input
     name=document.getElementById("nameInput").value.trim();
     userId=document.getElementById("idInput").value.trim();
     userId=userId.replace(/[^0-9]/g,"").slice(0,9);
@@ -240,7 +237,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     if(!name){ msg.textContent="Please enter your name."; return; }
     if(!/^202\d{6}$/.test(userId)){ msg.textContent="ID must be 9 digits and start with 202."; return; }
 
-    // local device daily lock
+    // ✅ (اختياري) local lock (بس الأساسي هو السيرفر)
     const key="played_"+userId;
     if(localStorage.getItem(key)===todayKey()){
       msg.textContent="This ID already played today (not allowed).";
@@ -252,7 +249,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       return;
     }
 
-    // loading state
     const oldText = btn.textContent;
     btn.disabled = true;
     btn.textContent = "Loading…";
@@ -260,8 +256,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
     try{
       msg.textContent="Loading question…";
-
-      // timeout so it won't feel stuck
       const timeoutMs = 6000;
       const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), timeoutMs));
 
@@ -279,7 +273,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
         msg.textContent="Not open yet. Please wait for the countdown.";
       }
     }finally{
-      // if still on login screen, unlock button
       if(!document.getElementById("loginScreen").classList.contains("hidden")){
         btn.disabled = false;
         btn.textContent = oldText;
@@ -369,7 +362,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     document.getElementById("resultTitle").textContent =
       timedOut ? "Time’s up!" : (correct ? "Correct!" : "Incorrect");
 
-    //  no score shown to student
+    // ✅ الطالب لا يرى السكور
     document.getElementById("resultDetails").textContent = `Time: ${timeTaken.toFixed(1)}s`;
 
     const status=document.getElementById("sendStatus");
@@ -389,6 +382,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
         status.textContent=json.error || "Result was not saved.";
       }else{
         status.textContent="Result saved ✅";
+        // optional local lock
         localStorage.setItem("played_"+userId,todayKey());
       }
     }catch(e){
