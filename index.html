@@ -12,12 +12,12 @@ body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
 input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
 button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
 #timer{width:70px;height:70px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;font-size:28px}
-.answers{width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:900px;padding:0 14px;box-sizing:border-box}
-.ans{width:100%;height:100%;min-height:110px;font-size:22px;color:#fff;border:none;border-radius:14px;transition:transform .08s ease, filter .08s ease}
+.answers{width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr}
+.ans{width:100%;height:100%;font-size:22px;color:#fff;border:none;transition:transform .08s ease, filter .08s ease}
 .ans:active{transform:scale(.98)}
 .red{background:#e21b3c}.blue{background:#1368ce}.yellow{background:#d89e00;color:#000}.green{background:#26890c}
-.card{background:#1b1b1b;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);min-width:340px;max-width:92vw}
-.small{opacity:.85;font-size:14px;text-align:center;line-height:1.4}
+.card{background:#1b1b1b;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.small{opacity:.85;font-size:14px}
 
 .flash-green{animation:flashGreen .35s ease 2}
 @keyframes flashGreen { 0%{background:#111} 50%{background:#0c6} 100%{background:#111} }
@@ -53,7 +53,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   background-repeat: no-repeat;
 }
 #loginScreen::before{
-  content:"";position:absolute;inset:0;background: rgba(40,40,40,0.55); /* overlay رمادي */
+  content:"";position:absolute;inset:0;background: rgba(0,0,0,0.55);
 }
 #loginScreen .card{position:relative;z-index:1}
 
@@ -61,7 +61,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   position:absolute;top:18px;left:18px;
   width:140px;height:140px;object-fit:contain;
   opacity:.97;filter: drop-shadow(0 0 6px rgba(0,0,0,0.55));
-  pointer-events:none;z-index:2;
+  pointer-events:none;
 }
 @media (max-width:480px){.bigLogo{width:100px;height:100px}}
 </style>
@@ -69,7 +69,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
 <body>
 
-<!-- LOGIN -->
 <div id="loginScreen" class="screen">
   <img src="images/logo.png" class="bigLogo" alt="University Logo">
 
@@ -81,7 +80,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     </div>
 
     <input id="nameInput" placeholder="Name"/>
-
     <input id="idInput" placeholder="Student ID (202xxxxxx)"
            inputmode="numeric" maxlength="9"
            oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9);"/>
@@ -91,12 +89,12 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   </div>
 </div>
 
-<!-- QUESTION -->
 <div id="questionScreen" class="screen hidden">
   <img src="images/logo.png" class="bigLogo" alt="University Logo">
 
   <div style="display:flex;gap:14px;align-items:center">
     <div id="timer">15</div>
+    <div id="scoreBox" class="small">Score: 0</div>
   </div>
 
   <h2 id="qText">Loading...</h2>
@@ -109,7 +107,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   </div>
 </div>
 
-<!-- RESULT -->
 <div id="resultScreen" class="screen hidden">
   <div class="card" style="text-align:center;min-width:320px">
     <h1 id="resultTitle"></h1>
@@ -119,22 +116,21 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 </div>
 
 <script>
-  // ✅ حطي هنا رابط الـ Web App (Deploy -> Web app -> URL)
   const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbws5-BRWsMDDl0P4-SpLOCS4JaCh43ETiu1WmHF8e_kYqI6L9mRRKQrZ7v9qjRjjyzMBQ/exec";
+  "https://script.google.com/macros/s/AKfycbzVd50OIObh0CcfG5S2gSnLFKNwdtkurHi5POgfFXBwMQjpTQx12A_kAeNuXJgQTaQDUg/exec";
 
-  // ✅ وقت الفتح (GMT+2)
-  // افتح 9:20 و اقفل 9:30
+  // ✅ غيري المواعيد من هنا (على نفس التوقيت GMT+2)
   const OPEN_HOUR=5, OPEN_MIN=12;
   const CLOSE_HOUR=5, CLOSE_MIN=30;
 
   let question=null;
+  let cachedQuestion=null;          // ✅ (جديد) نخزن السؤال لو اتجاب بدري
   let userId="", name="";
   let startTime=0;
   let timer=null;
   let answered=false;
+  let finished=false;               // ✅ (جديد) يمنع finish مرتين
 
-  // Sounds
   const sfx = {
     login:"sounds/login.mp3",
     timer:"sounds/timer.mp3",
@@ -144,7 +140,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     incorrect:"sounds/incorrect.mp3"
   };
 
-  // ✅ Audio pool (no overlap)
   const audioPool = {};
   let currentSFX=null;
 
@@ -177,10 +172,8 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     t.currentTime=0;
   }
 
-  // browser allow audio after first click
   document.addEventListener("click",()=>{ playSound(sfx.login,0.01,"sfx"); },{once:true});
 
-  // Helpers
   function pad2(n){ return String(n).padStart(2,"0"); }
   function todayKey(){
     const d=new Date();
@@ -217,34 +210,31 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
     if(isOpenNow()){
       msg.innerHTML="";
-      btn.disabled=false;
-      btn.style.opacity=1;
-      btn.style.cursor="pointer";
+      btn.disabled=false; btn.style.opacity=1; btn.style.cursor="pointer";
       btn.textContent="Start";
       return;
     }
 
     const diff=nextOpenTime().getTime()-Date.now();
-    msg.innerHTML=
-      "🌙 <b>Stay tuned… the Fazoora will open soon</b> 🌙<br><br>"+
-      "<span style='font-size:28px;font-weight:bold'>"+formatCountdown(diff)+"</span><br><br>"+
-      "<span style='opacity:.9'>Opens daily at <b>"+pad2(OPEN_HOUR)+":"+pad2(OPEN_MIN)+"</b> and closes at <b>"+pad2(CLOSE_HOUR)+":"+pad2(CLOSE_MIN)+"</b></span>";
-
-    btn.disabled=true;
-    btn.style.opacity=.55;
-    btn.style.cursor="not-allowed";
+    msg.innerHTML="🌙 <b>Stay tuned… the Fazoora will open soon</b> 🌙<br><br>"+
+                  "<span style='font-size:28px;font-weight:bold'>"+formatCountdown(diff)+"</span>";
+    btn.disabled=true; btn.style.opacity=.55; btn.style.cursor="not-allowed";
     btn.textContent="Closed";
   }
 
   updateAvailability();
   setInterval(updateAvailability,1000);
 
-  // ✅ GET question from server (hide it from GitHub)
+  // ✅ (جديد) نحاول نجيب السؤال بدري أول ما الصفحة تفتح لو الوقت مفتوح
+  (async function prefetchIfOpen(){
+    if(!isOpenNow()) return;
+    try{
+      cachedQuestion = await fetchQuestion();
+    }catch(e){}
+  })();
+
   async function fetchQuestion(){
-    const controller = new AbortController();
-    const t = setTimeout(()=>controller.abort(), 6000); // 6s timeout
-    const res = await fetch(APPS_SCRIPT_URL, { method:"GET", signal: controller.signal });
-    clearTimeout(t);
+    const res = await fetch(APPS_SCRIPT_URL,{method:"GET"});
     const json = await res.json();
     if(!json || json.ok !== true) throw new Error("Bad response");
     if(!json.isOpen) throw new Error("Closed");
@@ -260,57 +250,49 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     userId=document.getElementById("idInput").value.trim().replace(/[^0-9]/g,"").slice(0,9);
     document.getElementById("idInput").value=userId;
 
-    if(!name){
-      msg.textContent="Please enter your name.";
-      return;
-    }
-    if(!/^202\d{6}$/.test(userId)){
-      msg.textContent="ID must be 9 digits and start with 202.";
-      return;
-    }
+    if(!name){ msg.textContent="Please enter your name."; return; }
+    if(!/^202\d{6}$/.test(userId)){ msg.textContent="ID must be 9 digits and start with 202."; return; }
 
-    // ✅ local device daily lock (extra)
+    // ✅ local (extra) — بس الحماية الأساسية على السيرفر
     const key="played_"+userId;
     if(localStorage.getItem(key)===todayKey()){
       msg.textContent="This ID already played today (not allowed).";
       return;
     }
 
-    // if closed
     if(!isOpenNow()){
       updateAvailability();
       return;
     }
 
-    // UI loading (fix “it hangs”)
+    // ✅ (جديد) UI loading عشان مايبقاش شكله “معلق”
     btn.disabled=true;
     btn.textContent="Loading...";
     btn.style.opacity=.7;
     btn.style.cursor="wait";
 
     try{
-      question = await fetchQuestion();
+      question = cachedQuestion || await fetchQuestion();   // ✅ (جديد) استخدم الكاش لو موجود
+      cachedQuestion = question;                            // ✅ (جديد)
     }catch(e){
       updateAvailability();
-      msg.textContent="Could not load the question (maybe closed or script issue).";
+      msg.textContent="Could not load the question right now.";
+      btn.disabled=false; btn.textContent="Start"; btn.style.opacity=1; btn.style.cursor="pointer";
       return;
-    }finally{
-      // restore button state if still on login screen
-      if(!document.getElementById("loginScreen").classList.contains("hidden")){
-        btn.disabled=false;
-        btn.textContent="Start";
-        btn.style.opacity=1;
-        btn.style.cursor="pointer";
-      }
     }
 
     playSound(sfx.login,0.7,"sfx");
     show("questionScreen");
     loadQuestion();
+
+    // رجّع زر start لو رجعتي للشاشة تاني
+    btn.disabled=false; btn.textContent="Start"; btn.style.opacity=1; btn.style.cursor="pointer";
   }
 
   function loadQuestion(){
     answered=false;
+    finished=false;                 // ✅ (جديد)
+    document.getElementById("scoreBox").textContent="Score: 0";
     document.getElementById("qText").textContent=question.text;
 
     const btns=document.querySelectorAll(".ans");
@@ -336,14 +318,17 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       document.getElementById("timer").textContent=t;
 
       if(t>0){
-        playSound(sfx.timer,0.20,"timer");
+        playSound(sfx.timer,0.25,"timer");
       }
 
       if(t<=0){
         clearInterval(timer);
         lockButtons();
         stopTimerSound();
-        if(!answered){
+
+        // ✅ (جديد) امنعي race condition
+        if(!answered && !finished){
+          answered=true;            // ✅ (جديد) عشان مايدخلش answer بعدها
           flash(false);
           playSound(sfx.timeup,0.8,"sfx");
           finish(false,0,sec,true);
@@ -363,7 +348,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   }
 
   function answer(choice){
-    if(answered) return;
+    if(answered || finished) return;   // ✅ (جديد)
     answered=true;
 
     clearInterval(timer);
@@ -384,6 +369,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       flash(true);
       playSound(sfx.correct,0.7,"sfx");
       score=Math.max(0,Math.floor(((question.timeLimit||15)-timeTaken)*10));
+      document.getElementById("scoreBox").textContent="Score: "+score;
       if(score>0){ setTimeout(()=>playSound(sfx.points,0.6,"sfx"),150); }
       setTimeout(()=>finish(true,score,timeTaken,false),450);
     }else{
@@ -396,12 +382,14 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   }
 
   async function finish(correct,score,timeTaken,timedOut){
+    if(finished) return;            // ✅ (جديد) يمنع تكرار الريزلت
+    finished=true;                  // ✅ (جديد)
+
     show("resultScreen");
 
     document.getElementById("resultTitle").textContent =
       timedOut ? "Time’s up!" : (correct ? "Correct!" : "Incorrect");
 
-    // ✅ no score shown to student
     document.getElementById("resultDetails").textContent =
       `Time: ${timeTaken.toFixed(1)}s`;
 
@@ -422,7 +410,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
         status.textContent = json.error || "Result was not saved.";
       }else{
         status.textContent="Result saved ✅";
-        // ✅ mark played today on this device
         localStorage.setItem("played_"+userId, todayKey());
       }
     }catch(e){
