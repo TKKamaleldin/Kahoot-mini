@@ -12,12 +12,12 @@ body{margin:0;font-family:Arial;background:#111;color:#fff;overflow:hidden}
 input{padding:12px;font-size:18px;width:280px;border-radius:10px;border:none}
 button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:pointer}
 #timer{width:70px;height:70px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;font-size:28px}
-.answers{width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr}
-.ans{width:100%;height:100%;font-size:22px;color:#fff;border:none;transition:transform .08s ease, filter .08s ease}
+.answers{width:100%;height:55vh;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:900px;padding:0 14px;box-sizing:border-box}
+.ans{width:100%;height:100%;min-height:110px;font-size:22px;color:#fff;border:none;border-radius:14px;transition:transform .08s ease, filter .08s ease}
 .ans:active{transform:scale(.98)}
 .red{background:#e21b3c}.blue{background:#1368ce}.yellow{background:#d89e00;color:#000}.green{background:#26890c}
-.card{background:#1b1b1b;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-.small{opacity:.85;font-size:14px}
+.card{background:#1b1b1b;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);min-width:340px;max-width:92vw}
+.small{opacity:.85;font-size:14px;text-align:center;line-height:1.4}
 
 .flash-green{animation:flashGreen .35s ease 2}
 @keyframes flashGreen { 0%{background:#111} 50%{background:#0c6} 100%{background:#111} }
@@ -53,7 +53,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   background-repeat: no-repeat;
 }
 #loginScreen::before{
-  content:"";position:absolute;inset:0;background: rgba(0,0,0,0.55);
+  content:"";position:absolute;inset:0;background: rgba(40,40,40,0.55); /* overlay رمادي */
 }
 #loginScreen .card{position:relative;z-index:1}
 
@@ -61,7 +61,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   position:absolute;top:18px;left:18px;
   width:140px;height:140px;object-fit:contain;
   opacity:.97;filter: drop-shadow(0 0 6px rgba(0,0,0,0.55));
-  pointer-events:none;
+  pointer-events:none;z-index:2;
 }
 @media (max-width:480px){.bigLogo{width:100px;height:100px}}
 </style>
@@ -69,6 +69,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
 <body>
 
+<!-- LOGIN -->
 <div id="loginScreen" class="screen">
   <img src="images/logo.png" class="bigLogo" alt="University Logo">
 
@@ -90,6 +91,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   </div>
 </div>
 
+<!-- QUESTION -->
 <div id="questionScreen" class="screen hidden">
   <img src="images/logo.png" class="bigLogo" alt="University Logo">
 
@@ -107,6 +109,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   </div>
 </div>
 
+<!-- RESULT -->
 <div id="resultScreen" class="screen hidden">
   <div class="card" style="text-align:center;min-width:320px">
     <h1 id="resultTitle"></h1>
@@ -116,22 +119,22 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 </div>
 
 <script>
-  // ✅ حطي هنا لينك الـ Web App بتاعك (/exec)
+  // ✅ حطي هنا رابط الـ Web App (Deploy -> Web app -> URL)
   const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzvzYS0elozfl4TCrNomshV2_fipFIxvKxI4x0kPdhr3iCHM0QS7nVSYBPOvNH0gwTK/exec";
+  "https://script.google.com/macros/s/AKfycbws5-BRWsMDDl0P4-SpLOCS4JaCh43ETiu1WmHF8e_kYqI6L9mRRKQrZ7v9qjRjjyzMBQ/exec";
 
-  // ✅ نفس وقت السيرفر (لـ countdown فقط)
-  // فتح 09:20 - قفل 09:30
-  const OPEN_HOUR=4, OPEN_MIN=51;
-  const CLOSE_HOUR=4, CLOSE_MIN=59;
+  // ✅ وقت الفتح (GMT+2)
+  // افتح 9:20 و اقفل 9:30
+  const OPEN_HOUR=5, OPEN_MIN=12;
+  const CLOSE_HOUR=5, CLOSE_MIN=30;
 
   let question=null;
-  let cachedQuestion=null, cacheTime=0;
   let userId="", name="";
   let startTime=0;
   let timer=null;
   let answered=false;
 
+  // Sounds
   const sfx = {
     login:"sounds/login.mp3",
     timer:"sounds/timer.mp3",
@@ -141,42 +144,67 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     incorrect:"sounds/incorrect.mp3"
   };
 
+  // ✅ Audio pool (no overlap)
   const audioPool = {};
   let currentSFX=null;
 
   function getAudio(src){
-    if(!audioPool[src]){ audioPool[src]=new Audio(src); audioPool[src].preload="auto"; }
+    if(!audioPool[src]){
+      audioPool[src]=new Audio(src);
+      audioPool[src].preload="auto";
+    }
     return audioPool[src];
   }
+
   function playSound(src,vol=0.7,mode="sfx"){
     try{
-      if(mode==="sfx" && currentSFX){ currentSFX.pause(); currentSFX.currentTime=0; }
-      const a=getAudio(src); a.pause(); a.currentTime=0; a.volume=vol; a.play().catch(()=>{});
+      if(mode==="sfx" && currentSFX){
+        currentSFX.pause();
+        currentSFX.currentTime=0;
+      }
+      const a=getAudio(src);
+      a.pause();
+      a.currentTime=0;
+      a.volume=vol;
+      a.play().catch(()=>{});
       if(mode==="sfx") currentSFX=a;
     }catch(e){}
   }
-  function stopTimerSound(){ const t=getAudio(sfx.timer); t.pause(); t.currentTime=0; }
 
-  document.addEventListener("click",()=>{ playSound(sfx.login,0.7,"sfx"); },{once:true});
+  function stopTimerSound(){
+    const t=getAudio(sfx.timer);
+    t.pause();
+    t.currentTime=0;
+  }
 
+  // browser allow audio after first click
+  document.addEventListener("click",()=>{ playSound(sfx.login,0.01,"sfx"); },{once:true});
+
+  // Helpers
   function pad2(n){ return String(n).padStart(2,"0"); }
-  function todayKey(){ const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
-  function makeTimeToday(h,m){ const d=new Date(); d.setHours(h,m,0,0); return d; }
-
+  function todayKey(){
+    const d=new Date();
+    return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
+  }
+  function makeTimeToday(h,m){
+    const d=new Date();
+    d.setHours(h,m,0,0);
+    return d;
+  }
   function isOpenNow(){
     const now=new Date();
     const openT=makeTimeToday(OPEN_HOUR,OPEN_MIN);
     const closeT=makeTimeToday(CLOSE_HOUR,CLOSE_MIN);
     return now>=openT && now<=closeT;
   }
-
   function nextOpenTime(){
     const now=new Date();
     const openT=makeTimeToday(OPEN_HOUR,OPEN_MIN);
     if(now<openT) return openT;
-    const t=new Date(openT); t.setDate(t.getDate()+1); return t;
+    const t=new Date(openT);
+    t.setDate(t.getDate()+1);
+    return t;
   }
-
   function formatCountdown(ms){
     const total=Math.max(0,Math.floor(ms/1000));
     const h=Math.floor(total/3600), m=Math.floor((total%3600)/60), s=total%60;
@@ -189,96 +217,96 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
     if(isOpenNow()){
       msg.innerHTML="";
-      btn.disabled=false; btn.style.opacity=1; btn.style.cursor="pointer";
+      btn.disabled=false;
+      btn.style.opacity=1;
+      btn.style.cursor="pointer";
+      btn.textContent="Start";
       return;
     }
 
     const diff=nextOpenTime().getTime()-Date.now();
-    msg.innerHTML="🌙 <b>Stay tuned… the Fazoora will open soon</b> 🌙<br><br>"+
-                  "<span style='font-size:28px;font-weight:bold'>"+formatCountdown(diff)+"</span>";
-    btn.disabled=true; btn.style.opacity=.55; btn.style.cursor="not-allowed";
+    msg.innerHTML=
+      "🌙 <b>Stay tuned… the Fazoora will open soon</b> 🌙<br><br>"+
+      "<span style='font-size:28px;font-weight:bold'>"+formatCountdown(diff)+"</span><br><br>"+
+      "<span style='opacity:.9'>Opens daily at <b>"+pad2(OPEN_HOUR)+":"+pad2(OPEN_MIN)+"</b> and closes at <b>"+pad2(CLOSE_HOUR)+":"+pad2(CLOSE_MIN)+"</b></span>";
+
+    btn.disabled=true;
+    btn.style.opacity=.55;
+    btn.style.cursor="not-allowed";
+    btn.textContent="Closed";
   }
+
   updateAvailability();
   setInterval(updateAvailability,1000);
 
+  // ✅ GET question from server (hide it from GitHub)
   async function fetchQuestion(){
-    if(cachedQuestion && (Date.now()-cacheTime) < 30000){
-      return cachedQuestion;
-    }
-    const res = await fetch(APPS_SCRIPT_URL,{method:"GET"});
+    const controller = new AbortController();
+    const t = setTimeout(()=>controller.abort(), 6000); // 6s timeout
+    const res = await fetch(APPS_SCRIPT_URL, { method:"GET", signal: controller.signal });
+    clearTimeout(t);
     const json = await res.json();
-
     if(!json || json.ok !== true) throw new Error("Bad response");
-    if(!json.isOpen || !json.question) throw new Error("Closed");
-
-    cachedQuestion = json.question;
-    cacheTime = Date.now();
-    return cachedQuestion;
+    if(!json.isOpen) throw new Error("Closed");
+    return json.question;
   }
-
-  // ✅ preload in background while open
-  setInterval(()=>{
-    if(isOpenNow()){
-      fetchQuestion().catch(()=>{});
-    }
-  }, 5000);
 
   async function startGame(){
     const msg=document.getElementById("loginMsg");
     const btn=document.getElementById("startBtn");
-
     msg.textContent="";
 
     name=document.getElementById("nameInput").value.trim();
-    userId=document.getElementById("idInput").value.trim();
-    userId=userId.replace(/[^0-9]/g,"").slice(0,9);
+    userId=document.getElementById("idInput").value.trim().replace(/[^0-9]/g,"").slice(0,9);
     document.getElementById("idInput").value=userId;
 
-    if(!name){ msg.textContent="Please enter your name."; return; }
-    if(!/^202\d{6}$/.test(userId)){ msg.textContent="ID must be 9 digits and start with 202."; return; }
+    if(!name){
+      msg.textContent="Please enter your name.";
+      return;
+    }
+    if(!/^202\d{6}$/.test(userId)){
+      msg.textContent="ID must be 9 digits and start with 202.";
+      return;
+    }
 
-    // ✅ (اختياري) local lock (بس الأساسي هو السيرفر)
+    // ✅ local device daily lock (extra)
     const key="played_"+userId;
     if(localStorage.getItem(key)===todayKey()){
       msg.textContent="This ID already played today (not allowed).";
       return;
     }
 
+    // if closed
     if(!isOpenNow()){
       updateAvailability();
       return;
     }
 
-    const oldText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = "Loading…";
-    btn.style.opacity = .7;
+    // UI loading (fix “it hangs”)
+    btn.disabled=true;
+    btn.textContent="Loading...";
+    btn.style.opacity=.7;
+    btn.style.cursor="wait";
 
     try{
-      msg.textContent="Loading question…";
-      const timeoutMs = 6000;
-      const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), timeoutMs));
-
-      question = await Promise.race([ fetchQuestion(), timeoutPromise ]);
-
-      playSound(sfx.login,0.7,"sfx");
-      show("questionScreen");
-      loadQuestion();
-
+      question = await fetchQuestion();
     }catch(e){
-      if(String(e.message)==="timeout"){
-        msg.textContent="Network is slow… please try again.";
-      }else{
-        updateAvailability();
-        msg.textContent="Not open yet. Please wait for the countdown.";
-      }
+      updateAvailability();
+      msg.textContent="Could not load the question (maybe closed or script issue).";
+      return;
     }finally{
+      // restore button state if still on login screen
       if(!document.getElementById("loginScreen").classList.contains("hidden")){
-        btn.disabled = false;
-        btn.textContent = oldText;
-        btn.style.opacity = 1;
+        btn.disabled=false;
+        btn.textContent="Start";
+        btn.style.opacity=1;
+        btn.style.cursor="pointer";
       }
     }
+
+    playSound(sfx.login,0.7,"sfx");
+    show("questionScreen");
+    loadQuestion();
   }
 
   function loadQuestion(){
@@ -293,22 +321,28 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     });
 
     startTime=Date.now();
-    startTimer(question.timeLimit);
+    startTimer(question.timeLimit || 15);
   }
 
   function startTimer(sec){
-    clearInterval(timer); stopTimerSound();
+    clearInterval(timer);
+    stopTimerSound();
+
     let t=sec;
     document.getElementById("timer").textContent=t;
 
     timer=setInterval(()=>{
       t--;
       document.getElementById("timer").textContent=t;
-      if(t>0){ playSound(sfx.timer,0.25,"timer"); }
+
+      if(t>0){
+        playSound(sfx.timer,0.20,"timer");
+      }
 
       if(t<=0){
         clearInterval(timer);
-        lockButtons(); stopTimerSound();
+        lockButtons();
+        stopTimerSound();
         if(!answered){
           flash(false);
           playSound(sfx.timeup,0.8,"sfx");
@@ -318,7 +352,10 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     },1000);
   }
 
-  function lockButtons(){ document.querySelectorAll(".ans").forEach(b=>b.disabled=true); }
+  function lockButtons(){
+    document.querySelectorAll(".ans").forEach(b=>b.disabled=true);
+  }
+
   function flash(correct){
     document.body.classList.remove("flash-green","flash-red");
     void document.body.offsetWidth;
@@ -329,10 +366,12 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     if(answered) return;
     answered=true;
 
-    clearInterval(timer); stopTimerSound(); lockButtons();
+    clearInterval(timer);
+    stopTimerSound();
+    lockButtons();
 
     const elapsed=(Date.now()-startTime)/1000;
-    const timeTaken=Math.min(question.timeLimit,elapsed);
+    const timeTaken=Math.min(question.timeLimit || 15, elapsed);
 
     const correct=(choice===question.correctIndex);
     let score=0;
@@ -344,7 +383,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     if(correct){
       flash(true);
       playSound(sfx.correct,0.7,"sfx");
-      score=Math.max(0,Math.floor((question.timeLimit-timeTaken)*10));
+      score=Math.max(0,Math.floor(((question.timeLimit||15)-timeTaken)*10));
       if(score>0){ setTimeout(()=>playSound(sfx.points,0.6,"sfx"),150); }
       setTimeout(()=>finish(true,score,timeTaken,false),450);
     }else{
@@ -362,8 +401,9 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     document.getElementById("resultTitle").textContent =
       timedOut ? "Time’s up!" : (correct ? "Correct!" : "Incorrect");
 
-    // ✅ الطالب لا يرى السكور
-    document.getElementById("resultDetails").textContent = `Time: ${timeTaken.toFixed(1)}s`;
+    // ✅ no score shown to student
+    document.getElementById("resultDetails").textContent =
+      `Time: ${timeTaken.toFixed(1)}s`;
 
     const status=document.getElementById("sendStatus");
     status.textContent="Saving your result...";
@@ -379,11 +419,11 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       const json=await res.json().catch(()=>({ok:true}));
 
       if(json && json.ok===false){
-        status.textContent=json.error || "Result was not saved.";
+        status.textContent = json.error || "Result was not saved.";
       }else{
         status.textContent="Result saved ✅";
-        // optional local lock
-        localStorage.setItem("played_"+userId,todayKey());
+        // ✅ mark played today on this device
+        localStorage.setItem("played_"+userId, todayKey());
       }
     }catch(e){
       status.textContent="Could not save result ❌";
