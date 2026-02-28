@@ -115,13 +115,13 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 </div>
 
 <script>
-  // ✅ PUT YOUR WEB APP /exec URL HERE:
+  // 
   const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbyNsNgrNlymRCTeQ26zaE0ZDOJQJRhS9G-8UZiSdTOAl09CbsEmArr6EFTaCmpYYZE7Ww/exec";
+  "https://script.google.com/macros/s/AKfycbxh4rAQNcibVOzjHgiDGhZDejye9HibhSVfNG8ENzLlYPOG7nzWl0z2UrmbGrHz-EqonQ/exec";
 
-  // ✅ Client countdown window (just for UI). Server is the real authority.
-  const OPEN_HOUR=2, OPEN_MIN=45;
-  const CLOSE_HOUR=2, CLOSE_MIN=59;
+  // 
+  const OPEN_HOUR=11, OPEN_MIN=15;
+  const CLOSE_HOUR=11, CLOSE_MIN=45;
 
   let question=null;
   let userId="", name="";
@@ -129,7 +129,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   let timer=null;
   let answered=false;
 
-  // ✅ Sound files
+  //
   const sfx = {
     login:"sounds/login.mp3",
     timer:"sounds/timer.mp3",
@@ -139,7 +139,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     incorrect:"sounds/incorrect.mp3"
   };
 
-  // ✅ Better sound mixing (no overlap)
+
   const audioPool = {};
   let sfxChannel = null;    // single SFX at a time
   function getAudio(src){
@@ -260,7 +260,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     if(!name){ msg.textContent="Please enter your name."; msg.dataset.mode="error"; return; }
     if(!/^202\d{6}$/.test(userId)){ msg.textContent="ID must be 9 digits and start with 202"; msg.dataset.mode="error"; return; }
 
-    // ✅ client lock immediately (prevents refresh replay)
+
     const startedKey = "started_"+userId;
     const playedKey  = "played_"+userId;
 
@@ -275,7 +275,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       return;
     }
 
-    // show loading state (so it doesn't look frozen)
     btn.disabled=true;
     const oldBtnText = btn.textContent;
     btn.textContent="Loading...";
@@ -407,7 +406,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     document.getElementById("resultTitle").textContent =
       timedOut ? "Time’s up!" : (correct ? "Correct!" : "Incorrect");
 
-    // ✅ no score shown to student
     document.getElementById("resultDetails").textContent = `Time: ${timeTaken.toFixed(1)}s`;
 
     const status=document.getElementById("sendStatus");
