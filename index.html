@@ -117,11 +117,11 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
 <script>
   const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbyqAoZvd7SveEVdGtNgbCPNiGIcTvdsyBR86sC9bjBWsQrSwSYH5P5mXSPnqrI0ddv_Gw/exec";
+  "https://script.google.com/macros/s/AKfycbwVFT8u82ek9hMBVBzPVoSb2z9KIDzgltSAd-k73UnMI3fPwHAFxGhbECQcBAdQBk5cVA/exec";
 
   // 
-  const OPEN_HOUR=11, OPEN_MIN=15;
-  const CLOSE_HOUR=11, CLOSE_MIN=45;
+  const OPEN_HOUR=2, OPEN_MIN=23;
+  const CLOSE_HOUR=2, CLOSE_MIN=30;
 
   let question=null;
   let cachedQuestion=null;          // 
@@ -242,51 +242,64 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   }
 
   async function startGame(){
-    const msg=document.getElementById("loginMsg");
-    const btn=document.getElementById("startBtn");
-    msg.textContent="";
+  const msg=document.getElementById("loginMsg");
+  const btn=document.getElementById("startBtn");
+  msg.textContent="";
 
-    name=document.getElementById("nameInput").value.trim();
-    userId=document.getElementById("idInput").value.trim().replace(/[^0-9]/g,"").slice(0,9);
-    document.getElementById("idInput").value=userId;
+  name=document.getElementById("nameInput").value.trim();
+  userId=document.getElementById("idInput").value.trim().replace(/[^0-9]/g,"").slice(0,9);
+  document.getElementById("idInput").value=userId;
 
-    if(!name){ msg.textContent="Please enter your name."; return; }
-    if(!/^202\d{6}$/.test(userId)){ msg.textContent="ID must be 9 digits and start with 202."; return; }
+  if(!name){ msg.textContent="Please enter your name."; return; }
+  if(!/^202\d{6}$/.test(userId)){ msg.textContent="ID must be 9 digits and start with 202."; return; }
 
-    const key="played_"+userId;
-    if(localStorage.getItem(key)===todayKey()){
-      msg.textContent="This ID already played today (not allowed).";
-      return;
-    }
+  if(!isOpenNow()){
+    updateAvailability();
+    return;
+  }
 
-    if(!isOpenNow()){
-      updateAvailability();
-      return;
-    }
+  btn.disabled=true;
+  btn.textContent="Loading...";
+  btn.style.opacity=.7;
+  btn.style.cursor="wait";
 
-    btn.disabled=true;
-    btn.textContent="Loading...";
-    btn.style.opacity=.7;
-    btn.style.cursor="wait";
 
-    try{
-      question = cachedQuestion || await fetchQuestion();   
-      cachedQuestion = question;                            
-    }catch(e){
-      updateAvailability();
-      msg.textContent="Could not load the question right now.";
+  try{
+    const fdLock = new FormData();
+    fdLock.append("action","start");
+    fdLock.append("id",userId);
+    fdLock.append("name",name);
+
+    const lockRes = await fetch(APPS_SCRIPT_URL,{ method:"POST", body:fdLock });
+    const lockJson = await lockRes.json().catch(()=>({ok:false,error:"Bad JSON"}));
+
+    if(lockJson.ok !== true){
+      msg.textContent = lockJson.error || "Not allowed.";
       btn.disabled=false; btn.textContent="Start"; btn.style.opacity=1; btn.style.cursor="pointer";
       return;
     }
-
-    playSound(sfx.login,0.7,"sfx");
-    show("questionScreen");
-    loadQuestion();
-
-   
+  }catch(e){
+    msg.textContent="Could not start (server error).";
     btn.disabled=false; btn.textContent="Start"; btn.style.opacity=1; btn.style.cursor="pointer";
+    return;
   }
 
+
+  try{
+    question = cachedQuestion || await fetchQuestion();
+    cachedQuestion = question;
+  }catch(e){
+    msg.textContent="Could not load the question right now.";
+    btn.disabled=false; btn.textContent="Start"; btn.style.opacity=1; btn.style.cursor="pointer";
+    return;
+  }
+
+  playSound(sfx.login,0.7,"sfx");
+  show("questionScreen");
+  loadQuestion();
+
+  btn.disabled=false; btn.textContent="Start"; btn.style.opacity=1; btn.style.cursor="pointer";
+}
   function loadQuestion(){
     answered=false;
     finished=false;                 
@@ -380,41 +393,42 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   }
 
   async function finish(correct,score,timeTaken,timedOut){
-    if(finished) return;            
-    finished=true;                  
+  if(finished) return;
+  finished=true;
 
-    show("resultScreen");
+  show("resultScreen");
 
-    document.getElementById("resultTitle").textContent =
-      timedOut ? "Time’s up!" : (correct ? "Correct!" : "Incorrect");
+  document.getElementById("resultTitle").textContent =
+    timedOut ? "Time’s up!" : (correct ? "Correct!" : "Incorrect");
 
-    document.getElementById("resultDetails").textContent =
-      `Time: ${timeTaken.toFixed(1)}s`;
 
-    const status=document.getElementById("sendStatus");
-    status.textContent="Saving your result...";
+  document.getElementById("resultDetails").textContent =
+    `Time: ${timeTaken.toFixed(1)}s`;
 
-    try{
-      const fd=new FormData();
-      fd.append("id",userId);
-      fd.append("name",name);
-      fd.append("score",String(score));
-      fd.append("time",timeTaken.toFixed(1));
+  const status=document.getElementById("sendStatus");
+  status.textContent="Saving your result...";
 
-      const res=await fetch(APPS_SCRIPT_URL,{method:"POST",body:fd});
-      const json=await res.json().catch(()=>({ok:true}));
+  try{
+    const fd=new FormData();
+    fd.append("action","finish");   // 
+    fd.append("id",userId);
+    fd.append("name",name);
+    fd.append("score",String(score));
+    fd.append("time",timeTaken.toFixed(1));
 
-      if(json && json.ok===false){
-        status.textContent = json.error || "Result was not saved.";
-      }else{
-        status.textContent="Result saved ✅";
-        localStorage.setItem("played_"+userId, todayKey());
-      }
-    }catch(e){
-      status.textContent="Could not save result ❌";
+    const res=await fetch(APPS_SCRIPT_URL,{method:"POST",body:fd});
+    const json=await res.json().catch(()=>({ok:true}));
+
+    if(json && json.ok===false){
+      status.textContent=json.error || "Result was not saved.";
+    }else{
+      status.textContent="Result saved ✅";
+      localStorage.setItem("played_"+userId, todayKey()); // extra
     }
+  }catch(e){
+    status.textContent="Could not save result ❌";
   }
-
+}
   function show(id){
     ["loginScreen","questionScreen","resultScreen"].forEach(x=>{
       document.getElementById(x).classList.toggle("hidden",x!==id);
