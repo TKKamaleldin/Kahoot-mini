@@ -94,7 +94,6 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
   <div style="display:flex;gap:14px;align-items:center">
     <div id="timer">15</div>
-    <div id="scoreBox" class="small">Score: 0</div>
   </div>
 
   <h2 id="qText">Loading...</h2>
@@ -116,21 +115,21 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 </div>
 
 <script>
+  // ✅ PUT YOUR WEB APP /exec URL HERE:
   const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbwVFT8u82ek9hMBVBzPVoSb2z9KIDzgltSAd-k73UnMI3fPwHAFxGhbECQcBAdQBk5cVA/exec";
+  "https://script.google.com/macros/s/AKfycbx959kVAblj0SG1qrplq988Ak5GtU159QSrRt6ImTzbHPWFLUxfuuUx3ph9a4e-ukOj6g/exec";
 
-  // 
-  const OPEN_HOUR=2, OPEN_MIN=23;
-  const CLOSE_HOUR=2, CLOSE_MIN=30;
+  // ✅ Client countdown window (just for UI). Server is the real authority.
+  const OPEN_HOUR=2, OPEN_MIN=45;
+  const CLOSE_HOUR=2, CLOSE_MIN=59;
 
   let question=null;
-  let cachedQuestion=null;          // 
   let userId="", name="";
   let startTime=0;
   let timer=null;
   let answered=false;
-  let finished=false;               //
 
+  // ✅ Sound files
   const sfx = {
     login:"sounds/login.mp3",
     timer:"sounds/timer.mp3",
@@ -140,39 +139,50 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     incorrect:"sounds/incorrect.mp3"
   };
 
+  // ✅ Better sound mixing (no overlap)
   const audioPool = {};
-  let currentSFX=null;
-
+  let sfxChannel = null;    // single SFX at a time
   function getAudio(src){
     if(!audioPool[src]){
-      audioPool[src]=new Audio(src);
+      audioPool[src] = new Audio(src);
       audioPool[src].preload="auto";
     }
     return audioPool[src];
   }
-
-  function playSound(src,vol=0.7,mode="sfx"){
+  function playSFX(src, vol){
     try{
-      if(mode==="sfx" && currentSFX){
-        currentSFX.pause();
-        currentSFX.currentTime=0;
-      }
-      const a=getAudio(src);
-      a.pause();
-      a.currentTime=0;
-      a.volume=vol;
+      if(sfxChannel){ sfxChannel.pause(); sfxChannel.currentTime=0; }
+      const a = getAudio(src);
+      a.pause(); a.currentTime=0; a.volume=vol;
       a.play().catch(()=>{});
-      if(mode==="sfx") currentSFX=a;
+      sfxChannel = a;
+    }catch(e){}
+  }
+  function playTick(vol){
+    try{
+      const t = getAudio(sfx.timer);
+      t.pause(); t.currentTime=0; t.volume=vol;
+      t.play().catch(()=>{});
+    }catch(e){}
+  }
+  function stopTick(){
+    try{
+      const t = getAudio(sfx.timer);
+      t.pause(); t.currentTime=0;
     }catch(e){}
   }
 
-  function stopTimerSound(){
-    const t=getAudio(sfx.timer);
-    t.pause();
-    t.currentTime=0;
-  }
+  const VOL = {
+    login: 0.9,
+    tick: 0.6,
+    timeup: 1.0,
+    points: 0.9,
+    correct: 1.0,
+    incorrect: 1.0
+  };
 
-  document.addEventListener("click",()=>{ playSound(sfx.login,0.01,"sfx"); },{once:true});
+  // browser rule: allow audio after first click
+  document.addEventListener("click",()=>{ playSFX(sfx.login, VOL.login); },{once:true});
 
   function pad2(n){ return String(n).padStart(2,"0"); }
   function todayKey(){
@@ -180,9 +190,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
   }
   function makeTimeToday(h,m){
-    const d=new Date();
-    d.setHours(h,m,0,0);
-    return d;
+    const d=new Date(); d.setHours(h,m,0,0); return d;
   }
   function isOpenNow(){
     const now=new Date();
@@ -194,9 +202,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     const now=new Date();
     const openT=makeTimeToday(OPEN_HOUR,OPEN_MIN);
     if(now<openT) return openT;
-    const t=new Date(openT);
-    t.setDate(t.getDate()+1);
-    return t;
+    const t=new Date(openT); t.setDate(t.getDate()+1); return t;
   }
   function formatCountdown(ms){
     const total=Math.max(0,Math.floor(ms/1000));
@@ -209,101 +215,112 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     const btn=document.getElementById("startBtn");
 
     if(isOpenNow()){
-      msg.innerHTML="";
+      // don’t overwrite other messages (like errors)
+      if(msg.dataset.mode !== "error"){
+        msg.innerHTML="";
+      }
       btn.disabled=false; btn.style.opacity=1; btn.style.cursor="pointer";
-      btn.textContent="Start";
       return;
     }
 
     const diff=nextOpenTime().getTime()-Date.now();
+    msg.dataset.mode="countdown";
     msg.innerHTML="🌙 <b>Stay tuned… the Fazoora will open soon</b> 🌙<br><br>"+
                   "<span style='font-size:28px;font-weight:bold'>"+formatCountdown(diff)+"</span>";
     btn.disabled=true; btn.style.opacity=.55; btn.style.cursor="not-allowed";
-    btn.textContent="Closed";
   }
-
   updateAvailability();
   setInterval(updateAvailability,1000);
 
-
-  (async function prefetchIfOpen(){
-    if(!isOpenNow()) return;
-    try{
-      cachedQuestion = await fetchQuestion();
-    }catch(e){}
-  })();
-
   async function fetchQuestion(){
-    const res = await fetch(APPS_SCRIPT_URL,{method:"GET"});
-    const json = await res.json();
-    if(!json || json.ok !== true) throw new Error("Bad response");
-    if(!json.isOpen) throw new Error("Closed");
-    return json.question;
+    // cache-bust to avoid stale/cached response
+    const url = APPS_SCRIPT_URL + "?t=" + Date.now();
+    const res = await fetch(url,{method:"GET"});
+    const text = await res.text();
+    let json=null;
+    try{ json = JSON.parse(text); }catch(e){
+      throw new Error("Bad JSON from server. Check Web App URL / permissions.");
+    }
+    if(!json || json.ok !== true) throw new Error("Server not ok");
+    if(!json.isOpen) return { closed:true, question: json.question || null };
+    return { closed:false, question: json.question };
   }
 
   async function startGame(){
-  const msg=document.getElementById("loginMsg");
-  const btn=document.getElementById("startBtn");
-  msg.textContent="";
+    const msg=document.getElementById("loginMsg");
+    const btn=document.getElementById("startBtn");
 
-  name=document.getElementById("nameInput").value.trim();
-  userId=document.getElementById("idInput").value.trim().replace(/[^0-9]/g,"").slice(0,9);
-  document.getElementById("idInput").value=userId;
+    msg.dataset.mode=""; // reset
+    msg.textContent="";
 
-  if(!name){ msg.textContent="Please enter your name."; return; }
-  if(!/^202\d{6}$/.test(userId)){ msg.textContent="ID must be 9 digits and start with 202."; return; }
+    name=document.getElementById("nameInput").value.trim();
+    userId=document.getElementById("idInput").value.trim().replace(/[^0-9]/g,"").slice(0,9);
+    document.getElementById("idInput").value=userId;
 
-  if(!isOpenNow()){
-    updateAvailability();
-    return;
-  }
+    if(!name){ msg.textContent="Please enter your name."; msg.dataset.mode="error"; return; }
+    if(!/^202\d{6}$/.test(userId)){ msg.textContent="ID must be 9 digits and start with 202"; msg.dataset.mode="error"; return; }
 
-  btn.disabled=true;
-  btn.textContent="Loading...";
-  btn.style.opacity=.7;
-  btn.style.cursor="wait";
+    // ✅ client lock immediately (prevents refresh replay)
+    const startedKey = "started_"+userId;
+    const playedKey  = "played_"+userId;
 
-
-  try{
-    const fdLock = new FormData();
-    fdLock.append("action","start");
-    fdLock.append("id",userId);
-    fdLock.append("name",name);
-
-    const lockRes = await fetch(APPS_SCRIPT_URL,{ method:"POST", body:fdLock });
-    const lockJson = await lockRes.json().catch(()=>({ok:false,error:"Bad JSON"}));
-
-    if(lockJson.ok !== true){
-      msg.textContent = lockJson.error || "Not allowed.";
-      btn.disabled=false; btn.textContent="Start"; btn.style.opacity=1; btn.style.cursor="pointer";
+    if(localStorage.getItem(playedKey) === todayKey() || localStorage.getItem(startedKey) === todayKey()){
+      msg.textContent="This ID already played today (not allowed).";
+      msg.dataset.mode="error";
       return;
     }
-  }catch(e){
-    msg.textContent="Could not start (server error).";
-    btn.disabled=false; btn.textContent="Start"; btn.style.opacity=1; btn.style.cursor="pointer";
-    return;
+
+    if(!isOpenNow()){
+      updateAvailability();
+      return;
+    }
+
+    // show loading state (so it doesn't look frozen)
+    btn.disabled=true;
+    const oldBtnText = btn.textContent;
+    btn.textContent="Loading...";
+
+    try{
+      // reserve on this device immediately
+      localStorage.setItem(startedKey, todayKey());
+
+      const out = await fetchQuestion();
+      if(out.closed){
+        // server says closed
+        localStorage.removeItem(startedKey);
+        updateAvailability();
+        msg.textContent="Not open yet. Please wait for the countdown.";
+        msg.dataset.mode="error";
+        btn.textContent=oldBtnText;
+        return;
+      }
+
+      question = out.question;
+      if(!question || !question.options || question.options.length !== 4){
+        throw new Error("Question missing/invalid.");
+      }
+
+      playSFX(sfx.login, VOL.login);
+      show("questionScreen");
+      loadQuestion();
+
+    }catch(e){
+      // undo reserve if we never started the question
+      localStorage.removeItem(startedKey);
+
+      msg.textContent="Server error. Check Web App URL + access permissions.";
+      msg.dataset.mode="error";
+
+      btn.disabled=false;
+      btn.textContent=oldBtnText;
+      return;
+    }
+
+    btn.textContent=oldBtnText;
   }
 
-
-  try{
-    question = cachedQuestion || await fetchQuestion();
-    cachedQuestion = question;
-  }catch(e){
-    msg.textContent="Could not load the question right now.";
-    btn.disabled=false; btn.textContent="Start"; btn.style.opacity=1; btn.style.cursor="pointer";
-    return;
-  }
-
-  playSound(sfx.login,0.7,"sfx");
-  show("questionScreen");
-  loadQuestion();
-
-  btn.disabled=false; btn.textContent="Start"; btn.style.opacity=1; btn.style.cursor="pointer";
-}
   function loadQuestion(){
     answered=false;
-    finished=false;                 
-    document.getElementById("scoreBox").textContent="Score: 0";
     document.getElementById("qText").textContent=question.text;
 
     const btns=document.querySelectorAll(".ans");
@@ -314,12 +331,12 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     });
 
     startTime=Date.now();
-    startTimer(question.timeLimit || 15);
+    startTimer(question.timeLimit);
   }
 
   function startTimer(sec){
     clearInterval(timer);
-    stopTimerSound();
+    stopTick();
 
     let t=sec;
     document.getElementById("timer").textContent=t;
@@ -328,29 +345,22 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
       t--;
       document.getElementById("timer").textContent=t;
 
-      if(t>0){
-        playSound(sfx.timer,0.25,"timer");
-      }
+      if(t>0){ playTick(VOL.tick); }
 
       if(t<=0){
         clearInterval(timer);
         lockButtons();
-        stopTimerSound();
-
-   
-        if(!answered && !finished){
-          answered=true;            
+        stopTick();
+        if(!answered){
           flash(false);
-          playSound(sfx.timeup,0.8,"sfx");
+          playSFX(sfx.timeup, VOL.timeup);
           finish(false,0,sec,true);
         }
       }
     },1000);
   }
 
-  function lockButtons(){
-    document.querySelectorAll(".ans").forEach(b=>b.disabled=true);
-  }
+  function lockButtons(){ document.querySelectorAll(".ans").forEach(b=>b.disabled=true); }
 
   function flash(correct){
     document.body.classList.remove("flash-green","flash-red");
@@ -359,15 +369,15 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   }
 
   function answer(choice){
-    if(answered || finished) return;  
+    if(answered) return;
     answered=true;
 
     clearInterval(timer);
-    stopTimerSound();
+    stopTick();
     lockButtons();
 
     const elapsed=(Date.now()-startTime)/1000;
-    const timeTaken=Math.min(question.timeLimit || 15, elapsed);
+    const timeTaken=Math.min(question.timeLimit,elapsed);
 
     const correct=(choice===question.correctIndex);
     let score=0;
@@ -378,14 +388,13 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 
     if(correct){
       flash(true);
-      playSound(sfx.correct,0.7,"sfx");
-      score=Math.max(0,Math.floor(((question.timeLimit||15)-timeTaken)*10));
-      document.getElementById("scoreBox").textContent="Score: "+score;
-      if(score>0){ setTimeout(()=>playSound(sfx.points,0.6,"sfx"),150); }
+      playSFX(sfx.correct, VOL.correct);
+      score=Math.max(0,Math.floor((question.timeLimit-timeTaken)*10));
+      if(score>0){ setTimeout(()=>playSFX(sfx.points, VOL.points),150); }
       setTimeout(()=>finish(true,score,timeTaken,false),450);
     }else{
       flash(false);
-      playSound(sfx.incorrect,0.7,"sfx");
+      playSFX(sfx.incorrect, VOL.incorrect);
       document.getElementById("questionScreen").classList.add("shake");
       setTimeout(()=>document.getElementById("questionScreen").classList.remove("shake"),260);
       setTimeout(()=>finish(false,0,timeTaken,false),450);
@@ -393,42 +402,44 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
   }
 
   async function finish(correct,score,timeTaken,timedOut){
-  if(finished) return;
-  finished=true;
+    show("resultScreen");
 
-  show("resultScreen");
+    document.getElementById("resultTitle").textContent =
+      timedOut ? "Time’s up!" : (correct ? "Correct!" : "Incorrect");
 
-  document.getElementById("resultTitle").textContent =
-    timedOut ? "Time’s up!" : (correct ? "Correct!" : "Incorrect");
+    // ✅ no score shown to student
+    document.getElementById("resultDetails").textContent = `Time: ${timeTaken.toFixed(1)}s`;
 
+    const status=document.getElementById("sendStatus");
+    status.textContent="Saving your result...";
 
-  document.getElementById("resultDetails").textContent =
-    `Time: ${timeTaken.toFixed(1)}s`;
+    try{
+      const fd=new FormData();
+      fd.append("id",userId);
+      fd.append("name",name);
+      fd.append("score",String(score));
+      fd.append("time",timeTaken.toFixed(1));
 
-  const status=document.getElementById("sendStatus");
-  status.textContent="Saving your result...";
+      const res=await fetch(APPS_SCRIPT_URL,{method:"POST",body:fd});
+      const text=await res.text();
 
-  try{
-    const fd=new FormData();
-    fd.append("action","finish");   // 
-    fd.append("id",userId);
-    fd.append("name",name);
-    fd.append("score",String(score));
-    fd.append("time",timeTaken.toFixed(1));
+      let json=null;
+      try{ json = JSON.parse(text); }catch(e){ json={ok:false,error:"Bad JSON"}; }
 
-    const res=await fetch(APPS_SCRIPT_URL,{method:"POST",body:fd});
-    const json=await res.json().catch(()=>({ok:true}));
+      if(json && json.ok===false){
+        status.textContent=json.error || "Result was not saved.";
+        // keep started lock so refresh won't replay
+      }else{
+        status.textContent="Result saved ✅";
+        localStorage.setItem("played_"+userId, todayKey());
+      }
 
-    if(json && json.ok===false){
-      status.textContent=json.error || "Result was not saved.";
-    }else{
-      status.textContent="Result saved ✅";
-      localStorage.setItem("played_"+userId, todayKey()); // extra
+    }catch(e){
+      status.textContent="Could not save result ❌";
+      // keep started lock so refresh won't replay
     }
-  }catch(e){
-    status.textContent="Could not save result ❌";
   }
-}
+
   function show(id){
     ["loginScreen","questionScreen","resultScreen"].forEach(x=>{
       document.getElementById(x).classList.toggle("hidden",x!==id);
