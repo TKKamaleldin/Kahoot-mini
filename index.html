@@ -80,7 +80,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     </div>
 
     <input id="nameInput" placeholder="Name"/>
-    <input id="idInput" placeholder="Student ID (202xxxxxx)"
+    <input id="idInput" placeholder="Student ID (20xxxxxxx)"
            inputmode="numeric" maxlength="9"
            oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9);"/>
 
@@ -117,7 +117,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 <script>
   // 
   const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbxO02z7KJJMPZdMOIamjI_V1i2b9PyAdy8TSHhziS7Y1Qw08A2ErvQH5H9QGVXpCvwGzQ/exec";
+  "https://script.google.com/macros/s/AKfycbyOmQEGbejlc_AecXS7f8bTpNAoBjauSeTPWK8YEw7t4ZLxkzUG9CiO9i8h1927Fl1hUg/exec";
 
   // 
   const OPEN_HOUR=11, OPEN_MIN=15;
@@ -258,7 +258,8 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     document.getElementById("idInput").value=userId;
 
     if(!name){ msg.textContent="Please enter your name."; msg.dataset.mode="error"; return; }
-    if(!/^202\d{6}$/.test(userId)){ msg.textContent="ID must be 9 digits and start with 202"; msg.dataset.mode="error"; return; }
+    if(!/^20\d{7}$/.test(userId)){
+    msg.textContent="ID must be 9 digits and start with 20"; msg.dataset.mode="error"; return; }
 
 
     const startedKey = "started_"+userId;
