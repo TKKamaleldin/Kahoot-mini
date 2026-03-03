@@ -117,7 +117,7 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
 <script>
   // 
   const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbxtGYypCxwXVetZMJEtfm8IeyHropUGRAojnoT7u7MTGkXqOXHcc3sVpWRjL5ScIfcxfA/exec";
+  "https://script.google.com/macros/s/AKfycbyP0usQe8aJkiq3f7iThTnGWQG1WmgBNb4_SrioJwSnI4-a1Im_dX7ThyoZk-9uqPnrcA/exec";
 
   // 
   const OPEN_HOUR=11, OPEN_MIN=15;
@@ -382,9 +382,12 @@ button{padding:12px 24px;font-size:18px;border:none;border-radius:12px;cursor:po
     const correct=(choice===question.correctIndex);
     let score=0;
 
-    const btns=document.querySelectorAll(".ans");
-    btns[question.correctIndex].classList.add("correct-btn");
-    if(!correct) btns[choice].classList.add("wrong-btn");
+    const btns = document.querySelectorAll(".ans");
+  if(correct){
+  btns[choice].classList.add("correct-btn");
+  }else{
+  btns[choice].classList.add("wrong-btn");
+}
 
     if(correct){
       flash(true);
