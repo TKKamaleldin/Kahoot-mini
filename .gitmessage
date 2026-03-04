@@ -1,0 +1,7 @@
+
+# <type>: <subject>
+# Types: feat, fix, refactor, docs, style, test, chore
+# Example: feat: Add leaderboard to result screen
+#
+# To use this template, run:
+#   git config commit.template .gitmessage
